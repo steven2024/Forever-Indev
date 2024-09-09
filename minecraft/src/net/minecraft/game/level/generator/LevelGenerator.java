@@ -1,7 +1,19 @@
 package net.minecraft.game.level.generator;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.game.entity.player.EntityPlayer;
 import net.minecraft.game.level.MobSpawner;
 import net.minecraft.game.level.World;
 import net.minecraft.game.level.block.Block;
@@ -28,9 +40,11 @@ public final class LevelGenerator {
 	private int phases;
 	private float phaseBareLength = 0.0F;
 	private int[] floodFillBlocks = new int[1048576];
+    private Minecraft mc;
 
-	public LevelGenerator(IProgressUpdate var1) {
+	public LevelGenerator(IProgressUpdate var1, Minecraft mc) {
 		this.guiLoading = var1;
+	    this.mc = mc; // Ensure this is properly set
 	}
 
 	public final World generate(String var1, int var2, int var3, int var4) {
@@ -42,6 +56,7 @@ public final class LevelGenerator {
 		this.phases = 13 + var5 * 4;
 		this.guiLoading.displayProgressMessage("Generating level");
 		World var6 = new World();
+		var6.levelType = this.levelType;
 		var6.waterLevel = this.waterLevel;
 		var6.groundLevel = this.groundLevel;
 		this.width = var2;
@@ -408,6 +423,13 @@ public final class LevelGenerator {
 			var6.cloudColor = 5069403;
 			var6.skylightSubtracted = var6.skyBrightness = 12;
 		}
+		
+		if(this.levelType == 4) {
+		    var6.skyColor = 0xD3D3D3;  // Light Gray for a cold, overcast sky
+		    var6.fogColor = 0xE0E0E0;   // Very Light Gray for foggy, frosty conditions
+		    var6.cloudColor = 0xC0C0C0; // Silver Gray for winter clouds
+		    var6.skylightSubtracted = var6.skyBrightness = 8;  // Dimmer for a wintry ambiance
+		}
 
 		var6.waterLevel = this.waterLevel;
 		var6.groundLevel = this.groundLevel;
@@ -419,7 +441,7 @@ public final class LevelGenerator {
 		this.loadingBar();
 		this.setNextPhase(0.0F);
 		var6.findSpawn();
-		generateHouse(var6);
+		generateHouse(var6, mc);
 		this.guiLoading.displayLoadingString("Planting..");
 		this.loadingBar();
 		if(this.levelType != 1) {
@@ -474,54 +496,432 @@ public final class LevelGenerator {
 		}
 	}
 
-	private static void generateHouse(World world) {
-		int x = world.xSpawn;
-		int y = world.ySpawn;
-		int z = world.zSpawn;
+    public int getHeightFromDepth(int worldDepth) {
+        switch (worldDepth) {
+            case 0:
+                return 64; // Normal
+            case 1:
+                return 256; // Deep
+            case 2:
+                return 1024; // Infinite
+            default:
+                return 64;
+        }
+    }
 
-		// construct main house
-		for (int dx = x - 3; dx <= x + 3; dx++) {
-			for (int dy = y - 2; dy <= y + 2; dy++) {
-				for (int dz = z - 3; dz <= z + 3; dz++) {
-					
-					int var7 = dy < y - 1 ? Block.obsidian.blockID : 0;
-					if (dx == x - 3 || dz == z - 3 || dx == x + 3 || dz == z + 3 || dy == y - 2 || dy == y + 2) {
-						
-						var7 = Math.random() < 0.7 ? Block.cobblestone.blockID : Block.cobblestoneMossy.blockID;
-						
-						if (dy >= y - 1) {
-							var7 = Block.cobbledBrick.blockID;
-						}
-					}
+    private static void generateHouse(World world, Minecraft mc) {
+        int x = world.xSpawn;
+        int z = world.zSpawn;
+        int y = findGroundLevel(world, x, z); // Determine the ground level at the spawn location
 
-					if (dz == z - 3 && dx == x && dy >= y - 1 && dy <= y) {
-						var7 = 0;
-					}
+        int structureWidth;
+        int structureDepth;
+        boolean isCastle = Math.random() < 0.05; // 5% chance to generate a castle
 
-					world.setBlockWithNotify(dx, dy, dz, var7);
-				}
-			}
-		}
+        JSONObject structureData = null;
 
-		// add torches
-		world.setBlockWithNotify(x - 3 + 1, y, z, Block.torch.blockID);
-		world.setBlockWithNotify(x + 3 - 1, y, z, Block.torch.blockID);
-	}
+        if (isCastle) {
+            // Load the structure data from the JSON file
+            structureData = loadStructureFromJSON(new File(mc.mcDataDir, "structures/castle.json"));
+            if (structureData != null) {
+                // Get the structure size from the JSON data
+                JSONArray sizeArray = structureData.getJSONArray("nbt").getJSONObject(0)
+                                                    .getJSONArray("value").getJSONObject(0)
+                                                    .getJSONObject("value").getJSONArray("list");
+                structureWidth = sizeArray.getInt(0); // X size
+                structureDepth = sizeArray.getInt(2); // Z size
+            } else {
+                // Fallback dimensions if the JSON loading fails
+                structureWidth = 10;
+                structureDepth = 10;
+            }
+        } else {
+            // Default house dimensions
+            structureWidth = 7;
+            structureDepth = 7;
+        }
+
+        // Check if the structure would be floating and generate the hill if necessary
+        if (isFloating(world, x, y, z, structureWidth, structureDepth)) {
+            generateSlopedHillUnderStructure(world, x, y, z, structureWidth, structureDepth);
+        }
+
+        // Generate the structure on top of the hill
+        if (isCastle && structureData != null) {
+            generateCastleFromJSON(world, mc, x, y, z, structureData);
+        } else {
+            generateHouseWithPresets(world);
+        }
+    }
+
+    private static int findGroundLevel(World world, int x, int z) {
+        // Find the highest non-air block at the specified coordinates
+        for (int y = world.getHeight() - 1; y > 0; y--) {
+            if (world.getBlockId(x, y, z) != 0) { // Non-air block found
+                return y; // Return the Y-level just above the highest solid block
+            }
+        }
+        return 64; // Default ground level if no solid block is found
+    }
+
+    private static boolean isFloating(World world, int x, int y, int z, int structureWidth, int structureDepth) {
+        for (int dx = -structureWidth / 2; dx <= structureWidth / 2; dx++) {
+            for (int dz = -structureDepth / 2; dz <= structureDepth / 2; dz++) {
+                int checkX = x + dx;
+                int checkZ = z + dz;
+
+                // Check if the block directly below the structure is air
+                if (world.getBlockId(checkX, y - 1, checkZ) == 0) {
+                    return true; // Structure is floating in this area
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void generateSlopedHillUnderStructure(World world, int x, int y, int z, int structureWidth, int structureDepth) {
+        int hillRadius = Math.max(structureWidth, structureDepth); // Hill will extend out this much from the structure
+        int maxSlopeHeight = 5; // Height of the slope under the structure
+
+        // Flatten the base directly under the structure
+        for (int dx = -structureWidth / 2; dx <= structureWidth / 2; dx++) {
+            for (int dz = -structureDepth / 2; dz <= structureDepth / 2; dz++) {
+                int blockX = x + dx;
+                int blockZ = z + dz;
+                for (int dy = y - maxSlopeHeight; dy < y; dy++) {
+                    world.setBlockWithNotify(blockX, dy, blockZ, Block.dirt.blockID);
+                }
+                world.setBlockWithNotify(blockX, y - 1, blockZ, Block.grass.blockID);
+            }
+        }
+
+        // Generate the sloped hill outward from the structure base, only below the bottom block level
+        for (int dx = -hillRadius; dx <= hillRadius; dx++) {
+            for (int dz = -hillRadius; dz <= hillRadius; dz++) {
+                // Skip the area directly under the structure
+                if (dx >= -structureWidth / 2 && dx <= structureWidth / 2 && dz >= -structureDepth / 2 && dz <= structureDepth / 2) {
+                    continue;
+                }
+
+                double distance = Math.sqrt(dx * dx + dz * dz);
+                if (distance <= hillRadius) {
+                    // Calculate the height of the slope based on distance
+                    int slopeHeight = (int) ((1 - (distance / hillRadius)) * maxSlopeHeight);
+                    int blockX = x + dx;
+                    int blockZ = z + dz;
+
+                    // Fill blocks to create the slope, only up to the bottom block level of the structure
+                    for (int dy = y - slopeHeight; dy < y; dy++) {
+                        world.setBlockWithNotify(blockX, dy, blockZ, Block.dirt.blockID);
+                    }
+
+                    // Place grass block on top
+                    world.setBlockWithNotify(blockX, y - slopeHeight - 1, blockZ, Block.grass.blockID);
+                }
+            }
+        }
+    }
+
+    private static void generateCastleFromJSON(World world, Minecraft mc, int x, int y, int z, JSONObject structureData) {
+        // Access the "nbt" section
+        JSONArray nbtArray = structureData.getJSONArray("nbt");
+
+        // Retrieve the size information
+        JSONArray sizeArray = nbtArray.getJSONObject(0).getJSONArray("value").getJSONObject(0).getJSONObject("value").getJSONArray("list");
+        int structureWidth = sizeArray.getInt(0); // X size
+        int structureHeight = sizeArray.getInt(1); // Y size
+        int structureDepth = sizeArray.getInt(2); // Z size
+
+        // Calculate the offsets to center the structure
+        int offsetX = structureWidth / 2;
+        int offsetZ = structureDepth / 2;
+
+        // Access the "blocks" section
+        JSONArray blocksArray = nbtArray.getJSONObject(0).getJSONArray("value").getJSONObject(2).getJSONObject("value").getJSONArray("list");
+
+        // Block mapping
+        Map<String, Block> blockMapping = getBlockMappings();
+
+        // Access the "palette" section
+        JSONArray paletteArray = nbtArray.getJSONObject(0).getJSONArray("value").getJSONObject(3).getJSONObject("value").getJSONArray("list");
+
+        // First, determine the minimum Y-value in the structure
+        int minY = Integer.MAX_VALUE;
+        for (int i = 0; i < blocksArray.length(); i++) {
+            JSONArray blockDataArray = blocksArray.getJSONArray(i);
+            JSONArray posArray = blockDataArray.getJSONObject(0).getJSONObject("value").getJSONArray("list");
+            int posY = posArray.getInt(1); // Y position
+            if (posY < minY) {
+                minY = posY;
+            }
+        }
+
+        // Calculate the Y-offset to align the bottom blocks with the spawn Y
+        int yOffset = y - minY;
+
+        // Iterate over the blocks array and place the blocks
+        for (int i = 0; i < blocksArray.length(); i++) {
+            JSONArray blockDataArray = blocksArray.getJSONArray(i);
+
+            // Extract the position array
+            JSONArray posArray = blockDataArray.getJSONObject(0).getJSONObject("value").getJSONArray("list");
+
+            // Extract the state index
+            int stateIndex = blockDataArray.getJSONObject(1).getInt("value");
+
+            // Extract position relative to the structure
+            int posX = posArray.getInt(0);
+            int posY = posArray.getInt(1);
+            int posZ = posArray.getInt(2);
+
+            // Adjust positions to center the structure at the spawn and align the bottom blocks with spawn Y
+            int finalX = x - offsetX + posX;
+            int finalY = yOffset + posY; // Use yOffset to align the lowest block Y to the spawn Y
+            int finalZ = z - offsetZ + posZ;
+
+            // Retrieve the block state name from the palette
+            JSONArray paletteEntryArray = paletteArray.getJSONArray(stateIndex);
+
+            String blockState = null;
+            if (paletteEntryArray.length() > 1) {
+                blockState = paletteEntryArray.getJSONObject(1).optString("value", null);
+            } else if (paletteEntryArray.length() > 0) {
+                blockState = paletteEntryArray.getJSONObject(0).optString("value", null);
+            }
+
+            // Skip placing air blocks or if blockState is null
+            if (blockState != null && !"minecraft:air".equals(blockState)) {
+                Block blockToPlace = blockMapping.get(blockState);
+                if (blockToPlace != null) { // Skip placing the block if it's null (like air)
+                    world.setBlockWithNotify(finalX, finalY, finalZ, blockToPlace.blockID);
+                }
+            }
+        }
+    }
+
+    private static void generateHouseWithPresets(World world) {
+            int x = world.xSpawn;
+            int y = world.ySpawn;
+            int z = world.zSpawn;
+
+            // Determine preset
+            double presetChance = Math.random();
+            int wallBlockID;
+            int floorBlockID1, floorBlockID2;
+
+            if (presetChance < 0.10) {
+                // Preset 1: Normal Bricks with Polished Blocks or Polished Tiles
+                wallBlockID = Block.brick.blockID;
+                double floorChance = Math.random();
+                if (floorChance < 0.50) {
+                    floorBlockID1 = Block.polishedBlock.blockID;
+                    floorBlockID2 = Block.polishedBlock.blockID; // same for consistency
+                } else {
+                    floorBlockID1 = Block.polishedTiles.blockID;
+                    floorBlockID2 = Block.polishedTiles.blockID; // same for consistency
+                }
+            } else if (presetChance < 0.30) {
+                // Preset 2: Mud Brick and Compressed Dirt
+                wallBlockID = Block.mudBrick.blockID;
+                floorBlockID1 = Block.compressedDirt.blockID;
+                floorBlockID2 = Block.compressedDirt.blockID; // same for consistency
+            } else {
+                // Preset 3: Cobbled Brick with Mixed Floors
+                wallBlockID = Block.cobbledBrick.blockID;
+                double floorChance = Math.random();
+                if (floorChance < 0.25) {
+                    floorBlockID1 = Block.mossyCobbledStone.blockID;
+                    floorBlockID2 = Block.cobbledStone.blockID;
+                } else if (floorChance < 0.5) {
+                    floorBlockID1 = Block.mossyStone.blockID;
+                    floorBlockID2 = Block.stone.blockID;
+                } else if (floorChance < 0.75) {
+                    floorBlockID1 = Block.cobblestoneMossy.blockID;
+                    floorBlockID2 = Block.cobblestone.blockID;
+                } else {
+                    floorBlockID1 = Block.polishedTiles.blockID;
+                    floorBlockID2 = Block.polishedTiles.blockID;
+                }
+            }
+
+            // Construct main house
+            for (int dx = x - 3; dx <= x + 3; dx++) {
+                for (int dy = y - 3; dy <= y + 2; dy++) { // Adjusted height to be one block shorter
+                    for (int dz = z - 3; dz <= z + 3; dz++) {
+
+                        int var7 = dy < y - 2 ? Block.obsidian.blockID : 0; // Floor is now one block lower
+                        if (dx == x - 3 || dz == z - 3 || dx == x + 3 || dz == z + 3 || dy == y - 3 || dy == y + 2) {
+                            var7 = Math.random() < 0.7 ? Block.cobblestone.blockID : Block.cobblestoneMossy.blockID;
+
+                            if (dy >= y - 2) {
+                                var7 = wallBlockID;
+                            }
+                        }
+
+                        // Leave space for a two-block tall door
+                        if (dz == z - 3 && dx == x && dy >= y - 1 && dy <= y) {
+                            var7 = 0;
+                        }
+
+                        world.setBlockWithNotify(dx, dy, dz, var7);
+                    }
+                }
+            }
+
+            // Add non-mixed floor
+            for (int dx = x - 3; dx <= x + 3; dx++) {
+                for (int dz = z - 3; dz <= z + 3; dz++) {
+                    int floorBlockID = Math.random() < 0.5 ? floorBlockID1 : floorBlockID2;
+                    world.setBlockWithNotify(dx, y - 2, dz, floorBlockID); // Floor is now one block lower
+                }
+            }
+
+            // Add torches
+            world.setBlockWithNotify(x - 3 + 1, y, z, Block.torch.blockID);
+            world.setBlockWithNotify(x + 3 - 1, y, z, Block.torch.blockID);
+        }
+
+    private static JSONObject loadStructureFromJSON(File file) {
+        JSONObject jsonObject = null;
+        try {
+            String content = new String(Files.readAllBytes(file.toPath()));
+            jsonObject = new JSONObject(content);
+        } catch (IOException e) {
+            System.err.println("Error reading the JSON file: " + e.getMessage());
+        }
+        return jsonObject;
+    }
+
+    private static Map<String, Block> getBlockMappings() {
+        Map<String, Block> blockMapping = new HashMap<>();
+        Random rand = new Random();
+
+        // Floor: Stone with a chance to be replaced by cobblestone or polished block
+        blockMapping.put("minecraft:stone", selectBlockWithChance(
+            Block.stone, 
+            new Block[]{Block.cobblestone, Block.polishedBlock}, 
+            rand
+        ));
+
+        // Walls: Mossy cobblestone with a chance to be replaced by cobblestone or mossy stone bricks
+        Block chosenWallBlock = selectBlockWithChance(
+            Block.cobblestoneMossy, 
+            new Block[]{Block.cobblestone, Block.mossyStone}, 
+            rand
+        );
+        blockMapping.put("minecraft:mossy_cobblestone", chosenWallBlock);
+
+        // Windows: Glass with a chance to be replaced by tinted glass or the chosen wall block
+        blockMapping.put("minecraft:glass", selectBlockWithChance(
+            Block.glass, 
+            new Block[]{Block.tintedGlass, chosenWallBlock}, 
+            rand
+        ));
+
+        // Stairs: Stone (above second layer) with a chance to be replaced by cobblestone or polished tiles
+        blockMapping.put("minecraft:stone", selectBlockWithChance(
+            Block.stone, 
+            new Block[]{Block.cobblestone, Block.polishedTiles}, 
+            rand
+        ));
+
+        // Elevated Tower Floor: Wood with a chance to be replaced by planks or polished block
+        blockMapping.put("minecraft:oak_planks", selectBlockWithChance(
+            Block.wood, 
+            new Block[]{Block.planks, Block.polishedBlock}, 
+            rand
+        ));
+
+        blockMapping.put("minecraft:grass_block", Block.grass);
+        blockMapping.put("minecraft:dirt", Block.dirt);
+ //       blockMapping.put("minecraft:stone", Block.stone);
+        blockMapping.put("minecraft:cobblestone", Block.cobblestone);
+  //      blockMapping.put("minecraft:mossy_cobblestone", Block.cobblestoneMossy);
+        blockMapping.put("minecraft:sand", Block.sand);
+        blockMapping.put("minecraft:gravel", Block.gravel);
+        blockMapping.put("minecraft:obsidian", Block.obsidian);
+        blockMapping.put("minecraft:coal_ore", Block.oreCoal);
+        blockMapping.put("minecraft:iron_ore", Block.oreIron);
+        blockMapping.put("minecraft:gold_ore", Block.oreGold);
+        blockMapping.put("minecraft:diamond_ore", Block.oreDiamond);
+        blockMapping.put("minecraft:iron_block", Block.blockIron);
+        blockMapping.put("minecraft:gold_block", Block.blockGold);
+        blockMapping.put("minecraft:diamond_block", Block.blockDiamond);
+        blockMapping.put("minecraft:oak_sapling", Block.sapling);
+    //    blockMapping.put("minecraft:oak_log", Block.wood);
+    //    blockMapping.put("minecraft:oak_planks", Block.planks);
+        blockMapping.put("minecraft:oak_leaves", Block.leaves);
+        blockMapping.put("minecraft:red_wool", Block.clothRed);
+        blockMapping.put("minecraft:orange_wool", Block.clothOrange);
+        blockMapping.put("minecraft:yellow_wool", Block.clothYellow);
+        blockMapping.put("minecraft:lime_wool", Block.clothChartreuse);
+        blockMapping.put("minecraft:green_wool", Block.clothGreen);
+        blockMapping.put("minecraft:cyan_wool", Block.clothCyan);
+        blockMapping.put("minecraft:light_blue_wool", Block.clothCapri);
+        blockMapping.put("minecraft:blue_wool", Block.clothUltramarine);
+        blockMapping.put("minecraft:purple_wool", Block.clothViolet);
+        blockMapping.put("minecraft:magenta_wool", Block.clothMagenta);
+        blockMapping.put("minecraft:pink_wool", Block.clothRose);
+        blockMapping.put("minecraft:gray_wool", Block.clothDarkGray);
+        blockMapping.put("minecraft:light_gray_wool", Block.clothGray);
+        blockMapping.put("minecraft:white_wool", Block.clothWhite);
+        blockMapping.put("minecraft:dandelion", Block.plantYellow);
+        blockMapping.put("minecraft:poppy", Block.plantRed);
+        blockMapping.put("minecraft:brown_mushroom", Block.mushroomBrown);
+        blockMapping.put("minecraft:red_mushroom", Block.mushroomRed);
+        blockMapping.put("minecraft:wheat", Block.crops);
+        blockMapping.put("minecraft:polished_diorite", Block.polishedBlock);
+        blockMapping.put("minecraft:polished_granite", Block.polishedTiles);
+        blockMapping.put("minecraft:smooth_stone_slab", Block.slabHalf);
+        blockMapping.put("minecraft:smooth_stone", Block.slabFull);
+        blockMapping.put("minecraft:bricks", Block.brick);
+        blockMapping.put("minecraft:tnt", Block.tnt);
+        blockMapping.put("minecraft:bookshelf", Block.bookShelf);
+    //    blockMapping.put("minecraft:glass", Block.glass);
+        blockMapping.put("minecraft:sponge", Block.sponge);
+        blockMapping.put("minecraft:torch", Block.torch);
+        blockMapping.put("minecraft:chest", Block.crate);
+        blockMapping.put("minecraft:crafting_table", Block.workbench);
+        blockMapping.put("minecraft:furnace", Block.stoneOvenIdle);
+        blockMapping.put("minecraft:lit_furnace", Block.stoneOvenActive);
+        blockMapping.put("minecraft:lantern", Block.coalLamp);
+        blockMapping.put("minecraft:water", Block.waterMoving);
+        blockMapping.put("minecraft:lava", Block.lavaMoving);
+        blockMapping.put("minecraft:bedrock", Block.bedrock);
+        blockMapping.put("minecraft:observer", Block.cog);
+        blockMapping.put("minecraft:fire", Block.fire);
+        blockMapping.put("minecraft:mud_bricks", Block.mudBrick);
+        blockMapping.put("minecraft:cobbled_deepslate", Block.cobbledBrick);
+        blockMapping.put("minecraft:packed_mud", Block.packedGravel);
+   //     blockMapping.put("minecraft:tinted_glass", Block.tintedGlass);
+     //   blockMapping.put("minecraft:mossy_stone_bricks", Block.mossyStone);
+        return blockMapping;
+    }
+
+ // Helper method to randomly select a block with a chance of being replaced
+ private static Block selectBlockWithChance(Block defaultBlock, Block[] replacements, Random rand) {
+     double chance = rand.nextDouble();
+     if (replacements.length > 0) {
+         int index = (int) (chance * replacements.length);
+         return replacements[index] != null ? replacements[index] : defaultBlock;
+     }
+     return defaultBlock;
+ }
 
 	private void growGrassOnDirt(World var1) {
-		for(int var2 = 0; var2 < this.width; ++var2) {
-			this.setNextPhase((float)var2 * 100.0F / (float)(this.width - 1));
+        for (int var2 = 0; var2 < this.width; ++var2) {
+            this.setNextPhase((float) var2 * 100.0F / (float) (this.width - 1));
 
-			for(int var3 = 0; var3 < this.height; ++var3) {
-				for(int var4 = 0; var4 < this.depth; ++var4) {
-					if(var1.getBlockId(var2, var3, var4) == Block.dirt.blockID && var1.getBlockLightValue(var2, var3 + 1, var4) >= 4 && !var1.getBlockMaterial(var2, var3 + 1, var4).getCanBlockGrass()) {
-						var1.setBlock(var2, var3, var4, Block.grass.blockID);
-					}
-				}
-			}
-		}
+            for (int var3 = 0; var3 < this.height; ++var3) {
+                for (int var4 = 0; var4 < this.depth; ++var4) {
+                    if (var1.getBlockId(var2, var3, var4) == Block.dirt.blockID && var1.getBlockLightValue(var2, var3 + 1, var4) >= 4 && !var1.getBlockMaterial(var2, var3 + 1, var4).getCanBlockGrass()) {
+                        var1.setBlock(var2, var3, var4, Block.grass.blockID);
+                    }
+                }
+            }
+        }
 
-	}
+    }
 
 	private void growTrees(World var1) {
 		int var2 = this.width * this.depth * this.height / 80000;

@@ -24,7 +24,23 @@ public final class RenderPlayer extends RenderLiving {
 	}
 
 	public final void drawFirstPersonHand() {
-		this.modelBipedMain.bipedRightArm.render(1.0F);
+	    // Save the current rotation angles
+	    float originalRotateAngleX = this.modelBipedMain.bipedRightArm.rotateAngleX;
+	    float originalRotateAngleY = this.modelBipedMain.bipedRightArm.rotateAngleY;
+	    float originalRotateAngleZ = this.modelBipedMain.bipedRightArm.rotateAngleZ;
+
+	    // Set the rotation angles to zero to disable animations
+	    this.modelBipedMain.bipedRightArm.rotateAngleX = 0.0F;
+	    this.modelBipedMain.bipedRightArm.rotateAngleY = 0.0F;
+	    this.modelBipedMain.bipedRightArm.rotateAngleZ = 0.0F;
+
+	    // Render the first-person hand (right arm)
+	    this.modelBipedMain.bipedRightArm.render(1.0F);
+
+	    // Restore the original rotation angles
+	    this.modelBipedMain.bipedRightArm.rotateAngleX = originalRotateAngleX;
+	    this.modelBipedMain.bipedRightArm.rotateAngleY = originalRotateAngleY;
+	    this.modelBipedMain.bipedRightArm.rotateAngleZ = originalRotateAngleZ;
 	}
 
 	protected final boolean shouldRenderPass(EntityLiving var1, int var2) {

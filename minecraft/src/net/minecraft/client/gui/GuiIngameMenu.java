@@ -21,6 +21,9 @@ public final class GuiIngameMenu extends GuiScreen {
 
         this.controlList.add(new GuiButtonText(5, this.width / 2 - 100, this.height / 4 + 120, exitButtonText));
 
+        // Move the Top Scores button up by two button spaces (48 pixels)
+        this.controlList.add(new GuiButtonText(6, this.width / 2 - 100, this.height / 4 + 96, "Top Scores"));
+
         if (this.mc.session == null) {
             this.controlList.get(2).enabled = false;
             this.controlList.get(3).enabled = false;
@@ -60,6 +63,10 @@ public final class GuiIngameMenu extends GuiScreen {
                     this.mc.theWorld = null;
                     this.mc.displayGuiScreen(null);
                 }
+                break;
+
+            case 6:
+                this.mc.displayGuiScreen(new GuiTopScores(this)); // Pass the current instance
                 break;
         }
     }

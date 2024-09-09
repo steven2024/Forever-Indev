@@ -15,6 +15,7 @@ import net.minecraft.game.level.World;
 import net.minecraft.game.level.block.Block;
 import net.minecraft.game.level.block.tileentity.TileEntityFurnace;
 import net.minecraft.game.level.material.Material;
+import net.minecraft.game.physics.Vec3D;
 import util.MathHelper;
 
 public class EntityPlayer extends EntityLiving {
@@ -165,7 +166,7 @@ public class EntityPlayer extends EntityLiving {
 	public void onItemPickup(Entity var1) {
 	}
 
-	protected final float getEyeHeight() {
+	public final float getEyeHeight() {
 		return 0.12F;
 	}
 
@@ -220,4 +221,27 @@ public class EntityPlayer extends EntityLiving {
 
 	public void displayGUIFurnace(TileEntityFurnace var1) {
 	}
+
+	public ItemStack getAccessoryItem(int accessoryType) {
+	    InventoryPlayer inventory = this.inventory;
+	    return inventory.getStackInSlot(accessoryType);
+	}
+
+	public void setAccessoryItem(int accessoryType, ItemStack stack) {
+	    InventoryPlayer inventory = this.inventory;
+	    inventory.setInventorySlotContents(accessoryType, stack);
+	}
+
+    // Method to get the player's current health
+    public int getHealth() {
+        return this.health;
+    }
+
+    public Vec3D getLookVec() {
+        float f = MathHelper.cos(-this.rotationYaw * 0.017453292F - (float)Math.PI);
+        float f1 = MathHelper.sin(-this.rotationYaw * 0.017453292F - (float)Math.PI);
+        float f2 = -MathHelper.cos(-this.rotationPitch * 0.017453292F);
+        float f3 = MathHelper.sin(-this.rotationPitch * 0.017453292F);
+        return new Vec3D(f1 * f2, f3, f * f2);
+    }
 }

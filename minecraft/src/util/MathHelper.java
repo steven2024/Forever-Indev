@@ -35,4 +35,15 @@ public final class MathHelper {
 		}
 
 	}
+
+	public static int clamp_int(int value, int min, int max) {
+	    // Ensures that the value is between min and max, inclusive.
+	    if (value < min) {
+	        return min;
+	    } else if (value > max) {
+	        return max;
+	    } else {
+	        return value;
+	    }
+	}
 }

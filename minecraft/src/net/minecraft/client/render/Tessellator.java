@@ -24,7 +24,7 @@ public final class Tessellator {
 	private boolean isColorDisabled = false;
 	private int drawMode;
 	public static Tessellator instance = new Tessellator();
-	private boolean isDrawing = false;
+	boolean isDrawing = false;
 	private boolean useVBO = false;
 	private IntBuffer vertexBuffers;
 	private int vboIndex = 0;

@@ -48,6 +48,7 @@ public final class ItemRenderer {
 			GL11.glTranslatef(0.56F, -0.52F - (1.0F - var2) * 0.6F, -0.71999997F);
 			GL11.glRotatef(45.0F, 0.0F, 1.0F, 0.0F);
 			GL11.glEnable(GL11.GL_NORMALIZE);
+			
 			if(this.itemSwingState) {
 				var9 = ((float)this.swingProgress + var1) / 8.0F;
 				var4 = MathHelper.sin(var9 * var9 * (float)Math.PI);
@@ -192,7 +193,6 @@ public final class ItemRenderer {
 			var12.drawFirstPersonHand();
 			GL11.glPopMatrix();
 		}
-
 		GL11.glDisable(GL11.GL_NORMALIZE);
 		RenderHelper.disableStandardItemLighting();
 	}

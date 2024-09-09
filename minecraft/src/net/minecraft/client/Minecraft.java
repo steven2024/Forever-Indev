@@ -1,7 +1,10 @@
 package net.minecraft.client;
 
+import java.awt.BorderLayout;
 import java.awt.Canvas;
 import java.awt.Component;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -9,19 +12,34 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
 import net.minecraft.client.controller.PlayerController;
 import net.minecraft.client.controller.PlayerControllerCreative;
 import net.minecraft.client.controller.PlayerControllerSP;
 import net.minecraft.client.effect.EffectRenderer;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiConfirmationScreen;
+import net.minecraft.client.gui.GuiControls;
 import net.minecraft.client.gui.GuiErrorScreen;
 import net.minecraft.client.gui.GuiGameOver;
 import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.GuiIngameMenu;
+import net.minecraft.client.gui.GuiLoadLevel;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiMessage;
+import net.minecraft.client.gui.GuiNewLevel;
+import net.minecraft.client.gui.GuiOptions;
+import net.minecraft.client.gui.GuiSaveLevel;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiSoundSettings;
+import net.minecraft.client.gui.GuiStringBox;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.container.GuiInventoryCreative;
 import net.minecraft.client.gui.container.GuiInventorySurvival;
@@ -104,11 +122,12 @@ public final class Minecraft implements Runnable {
 	public boolean inventoryScreen;
 	private int prevFrameTime;
 	public boolean inGameHasFocus;
-
+	public boolean hideGui;
+	
 	public Minecraft(Canvas var1, MinecraftApplet var2, int var3, int var4, boolean var5) {
 		new ModelBiped(0.0F);
 		this.objectMouseOver = null;
-		this.sndManager = new SoundManager();
+		this.sndManager = new SoundManager(this);
 		this.server = null;
 		this.textureWaterFX = new TextureWaterFX();
 		this.textureLavaFX = new TextureLavaFX();
@@ -178,23 +197,33 @@ public final class Minecraft implements Runnable {
 
 	public final void run() {
 		this.running = true;
+		this.options = new GameSettings(this, this.mcDataDir);
+	    try {
+	        Minecraft var1 = this;
+	        if (this.mcCanvas != null) {
+	            Display.setParent(this.mcCanvas);
+	        } else if (this.fullscreen) {
+	            Display.setFullscreen(true);
+	            this.displayWidth = Display.getDisplayMode().getWidth();
+	            this.displayHeight = Display.getDisplayMode().getHeight();
+	        } else {
+	            Display.setDisplayMode(new DisplayMode(this.displayWidth, this.displayHeight));
+	        }
 
-		try {
-			Minecraft var1 = this;
-			if(this.mcCanvas != null) {
-				Display.setParent(this.mcCanvas);
-			} else if(this.fullscreen) {
-				Display.setFullscreen(true);
-				this.displayWidth = Display.getDisplayMode().getWidth();
-				this.displayHeight = Display.getDisplayMode().getHeight();
-			} else {
-				Display.setDisplayMode(new DisplayMode(this.displayWidth, this.displayHeight));
-			}
+	        // ** Insert username prompt and session handling logic here **
+	        if (!this.options.skipUsernamePrompt) {
+	            promptForUsername();
+	        } else {
+	            // Use the stored username
+	            this.session = new Session(this.options.username, debug);
+	        }
 
 			Display.setTitle("Minecraft Minecraft Indev");
 
 			IntBuffer var24;
 			try {
+			    // Set the window to be resizable
+			    Display.setResizable(true);
 				Display.create();
 				System.out.println("LWJGL version: " + Sys.getVersion());
 				System.out.println("GL RENDERER: " + GL11.glGetString(GL11.GL_RENDERER));
@@ -338,7 +367,7 @@ public final class Minecraft implements Runnable {
 
 					for(int var30 = 0; var30 < this.timer.elapsedTicks; ++var30) {
 						++this.ticksRan;
-						this.runTick();
+						this.runTick(null);
 					}
 
 					this.sndManager.setListener(this.thePlayer, this.timer.renderPartialTicks);
@@ -389,6 +418,91 @@ public final class Minecraft implements Runnable {
 		}
 
 	}
+
+    // Method to prompt the user for a username and set the session
+	private void promptForUsername() {
+	    // Create the panel that will contain the components
+	    JPanel panel = new JPanel(new BorderLayout(5, 5));
+
+	    // Create the label and text field for username input
+	    JPanel labelPanel = new JPanel(new BorderLayout(5, 5));
+	    labelPanel.add(new JLabel("Enter your username:"), BorderLayout.WEST);
+	    JTextField usernameField = new JTextField(15);
+
+	    // Determine if a previous username exists
+	    boolean hasPreviousUsername = !this.options.username.isEmpty();
+
+	    // Auto-fill the saved username if available and set initial focus
+	    if (hasPreviousUsername) {
+	        usernameField.setText(this.options.username);
+	        usernameField.selectAll(); // Automatically highlight the existing username
+	    }
+
+	    labelPanel.add(usernameField, BorderLayout.CENTER);
+	    panel.add(labelPanel, BorderLayout.NORTH);
+
+	    // Create the checkbox for "Remember my username and skip this prompt"
+	    JCheckBox rememberCheckBox = new JCheckBox("Remember my username and skip this prompt", hasPreviousUsername);
+	    panel.add(rememberCheckBox, BorderLayout.SOUTH);
+
+	    // Show the dialog
+	    JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+	    JDialog dialog = pane.createDialog("Username");
+	    
+	    dialog.addWindowFocusListener(new WindowAdapter() {
+	        @Override
+	        public void windowGainedFocus(WindowEvent e) {
+	            if (hasPreviousUsername) {
+	                usernameField.requestFocusInWindow(); // Ensure focus
+	                usernameField.selectAll(); // Highlight text
+	            }
+	        }
+	    });
+
+	    dialog.setVisible(true);
+
+	    // Get the dialog result safely
+	    Object selectedValue = pane.getValue();
+	    if (selectedValue == null || !(selectedValue instanceof Integer)) {
+	        // Handle the cancel case (e.g., user pressed "Cancel" or closed the dialog)
+	        System.exit(0);
+	    }
+
+	    int result = (int) selectedValue;
+
+	    if (result == JOptionPane.OK_OPTION) {
+	        String enteredUsername = usernameField.getText().trim();
+	        boolean rememberUsername = rememberCheckBox.isSelected();
+
+	        // Ensure the username is not empty
+	        while (enteredUsername.isEmpty()) {
+	            JOptionPane.showMessageDialog(null, "Username cannot be empty. Please enter your username.", "Warning", JOptionPane.WARNING_MESSAGE);
+	            dialog.setVisible(true);
+	            selectedValue = pane.getValue();
+	            if (selectedValue == null || !(selectedValue instanceof Integer)) {
+	                System.exit(0);
+	            }
+	            result = (int) selectedValue;
+	            if (result == JOptionPane.OK_OPTION) {
+	                enteredUsername = usernameField.getText().trim();
+	            } else {
+	                // User canceled after the warning, close the game
+	                System.exit(0);
+	            }
+	        }
+
+	        // Save the username and skip prompt option in GameSettings
+	        this.options.setUsername(enteredUsername, rememberUsername);
+
+	        // Always overwrite the session with the entered username
+	        this.session = new Session(enteredUsername, enteredUsername);
+	    } else {
+	        // Handle case where user cancels the dialog
+	        // Close the game if the user cancels the dialog
+	        System.exit(0);
+	    }
+	}
+
 
 	public final void setIngameFocus() {
 		if(Display.isActive()) {
@@ -524,43 +638,45 @@ public final class Minecraft implements Runnable {
 	}
 
 	public final void toggleFullscreen() {
-		try {
-			this.fullscreen = !this.fullscreen;
-			System.out.println("Toggle fullscreen!");
-			if(this.fullscreen) {
-				Display.setDisplayMode(Display.getDesktopDisplayMode());
-				this.displayWidth = Display.getDisplayMode().getWidth();
-				this.displayHeight = Display.getDisplayMode().getHeight();
-			} else {
-				if(this.mcCanvas != null) {
-					this.displayWidth = this.mcCanvas.getWidth();
-					this.displayHeight = this.mcCanvas.getHeight();
-				} else {
-					this.displayWidth = this.tempDisplayWidth;
-					this.displayHeight = this.tempDisplayHeight;
-				}
+	    try {
+	        this.fullscreen = !this.fullscreen;
+	        System.out.println("Toggle fullscreen!");
+	        
+	        if(this.fullscreen) {
+	            Display.setDisplayMode(Display.getDesktopDisplayMode());
+	            this.displayWidth = Display.getDisplayMode().getWidth();
+	            this.displayHeight = Display.getDisplayMode().getHeight();
+	        } else {
+	            if(this.mcCanvas != null) {
+	                this.displayWidth = this.mcCanvas.getWidth();
+	                this.displayHeight = this.mcCanvas.getHeight();
+	            } else {
+	                this.displayWidth = this.tempDisplayWidth;
+	                this.displayHeight = this.tempDisplayHeight;
+	            }
 
-				Display.setDisplayMode(new DisplayMode(this.tempDisplayWidth, this.tempDisplayHeight));
-			}
+	            Display.setDisplayMode(new DisplayMode(this.tempDisplayWidth, this.tempDisplayHeight));
+	        }
 
-			this.inputLock();
-			Display.setFullscreen(this.fullscreen);
-			Display.update();
-			Thread.sleep(1000L);
-			if(this.fullscreen) {
-				this.setIngameFocus();
-			}
+	        Display.setFullscreen(this.fullscreen);
+	        Display.update();
 
-			if(this.currentScreen != null) {
-				this.inputLock();
-				this.resize(this.displayWidth, this.displayHeight);
-			}
+	        // Only lock input and adjust resolution, do not reset the current screen
+	        if (this.currentScreen != null) {
+	            ScaledResolution scaledResolution = new ScaledResolution(this.displayWidth, this.displayHeight);
+	            int scaledWidth = scaledResolution.getScaledWidth();
+	            int scaledHeight = scaledResolution.getScaledHeight();
+	            this.currentScreen.setWorldAndResolution(this, scaledWidth, scaledHeight);
+	        } else {
+	            this.setIngameFocus();
+	        }
 
-			System.out.println("Size: " + this.displayWidth + ", " + this.displayHeight);
-		} catch (Exception var2) {
-			var2.printStackTrace();
-		}
+	        System.out.println("Size: " + this.displayWidth + ", " + this.displayHeight);
+	    } catch (Exception var2) {
+	        var2.printStackTrace();
+	    }
 	}
+
 
 	private void resize(int var1, int var2) {
 		this.displayWidth = var1;
@@ -574,8 +690,44 @@ public final class Minecraft implements Runnable {
 
 	}
 
-	private void runTick() {
-		this.ingameGUI.updateChatMessages();
+	private void runTick(Item item) {
+	    this.ingameGUI.updateChatMessages();
+
+	    if (this.thePlayer != null) {
+	        InventoryPlayer inventory = this.thePlayer.inventory;
+
+	        // Get the item stacks in slots 36 (quiver slot) and 37 (arrow slot)
+	        ItemStack quiverSlot = inventory.getStackInSlot(36);
+	        ItemStack arrowSlot = inventory.getStackInSlot(37);
+
+	        // Check if the quiver is in slot 36
+	        if (quiverSlot != null && quiverSlot.getItem() == Item.quiver) {
+	            int arrowCount = getArrowCountInSlot(inventory, 37);
+
+	            // Set the custom icon index based on the arrow count
+	            if (arrowCount == 0) {
+	                quiverSlot.setCustomIconIndex(54); // Empty quiver icon
+	            } else if (arrowCount > 0 && arrowCount <= 32) {
+	                quiverSlot.setCustomIconIndex(38); // Partially filled quiver (1 to 32 arrows)
+	            } else if (arrowCount > 32 && arrowCount <= 64) {
+	                quiverSlot.setCustomIconIndex(22); // Fully filled quiver (33 to 64 arrows)
+	            }
+
+	            // Render the quiver using its custom icon index
+	            int iconIndex = quiverSlot.hasCustomIcon() ? quiverSlot.getCustomIconIndex() : quiverSlot.getItem().getIconIndex();
+
+	        } else {
+	            // If there's no quiver in slot 36, drop the arrows in slot 37
+	            ItemStack slot37 = inventory.getStackInSlot(37);
+	            if (arrowSlot != null && arrowSlot.getItem() == Item.arrow) {
+	                // Drop the arrows in slot 37
+	            	this.thePlayer.dropPlayerItem(slot37);
+	                inventory.setInventorySlotContents(37, null); // Clear slot 37
+	            }
+	        }
+	    }
+	    
+	    updateMusicState();
 		
 		if(!this.isGamePaused && this.theWorld != null) {
 			this.playerController.onUpdate();
@@ -590,6 +742,21 @@ public final class Minecraft implements Runnable {
 			this.displayGuiScreen(null);
 		}
 
+		if (Keyboard.isKeyDown(Keyboard.KEY_F)) {
+		    if (this.currentScreen == null 
+		        || this.currentScreen instanceof GuiMainMenu 
+		        || this.currentScreen instanceof GuiOptions 
+		        || this.currentScreen instanceof GuiConfirmationScreen
+		        || this.currentScreen instanceof GuiGameOver
+		        || this.currentScreen instanceof GuiErrorScreen
+		        || this.currentScreen instanceof GuiNewLevel
+		        || this.currentScreen instanceof GuiLoadLevel
+		        || this.currentScreen instanceof GuiSaveLevel
+		        || this.currentScreen instanceof GuiSoundSettings) {
+		        this.toggleFullscreen();
+		    }
+		}
+		
 		if(this.currentScreen == null || this.currentScreen.allowUserInput) {
 			
 			jump:
@@ -633,24 +800,45 @@ public final class Minecraft implements Runnable {
 									this.prevFrameTime = this.ticksRan;
 								}
 
-								if(Mouse.getEventButton() == 2 && Mouse.getEventButtonState() && this.objectMouseOver != null) {
-									var2 = this.theWorld.getBlockId(this.objectMouseOver.blockX, this.objectMouseOver.blockY, this.objectMouseOver.blockZ);
-									if(var2 == Block.grass.blockID) {
-										var2 = Block.dirt.blockID;
-									}
+								if (Mouse.getEventButton() == 2 && Mouse.getEventButtonState() && this.objectMouseOver != null) {
+								    int blockId = this.theWorld.getBlockId(this.objectMouseOver.blockX, this.objectMouseOver.blockY, this.objectMouseOver.blockZ);
 
-									if(var2 == Block.slabFull.blockID) {
-										var2 = Block.slabHalf.blockID;
-									}
+								    if (!this.thePlayer.isCreativeMode) {
+								        // Map block IDs for non-creative mode
+								        if (blockId == Block.grass.blockID) {
+								            blockId = Block.dirt.blockID;
+								        }
 
-									if(var2 == Block.bedrock.blockID) {
-										var2 = Block.stone.blockID;
-									}
+								        if (blockId == Block.slabFull.blockID) {
+								            blockId = Block.slabHalf.blockID;
+								        }
 
-									this.thePlayer.inventory.getFirstEmptyStack(var2);
+								        if (blockId == Block.bedrock.blockID) {
+								            blockId = Block.stone.blockID;
+								        }
+
+								        this.thePlayer.inventory.getFirstEmptyStack(blockId);
+								    } else {
+								        // Handle creative mode, get exact block with metadata
+								        int metadata = this.theWorld.getBlockMetadata(this.objectMouseOver.blockX, this.objectMouseOver.blockY, this.objectMouseOver.blockZ);
+
+								        // Check if the player already has the item in their inventory
+								        int slot = this.thePlayer.inventory.getInventorySlotContainItem(blockId);
+
+								        if (slot == -1) {
+								            // If the player does not already have the item, add it to their inventory
+								            this.thePlayer.inventory.storePartialItemStack(new ItemStack(blockId, 1, metadata));
+								            slot = this.thePlayer.inventory.getInventorySlotContainItem(blockId);
+								        }
+
+								        // Switch to the slot containing the block
+								        if (slot >= 0) {
+								            this.thePlayer.inventory.currentItem = slot;
+								        }
+								    }
 								}
-							}
-						} else if(this.currentScreen != null) {
+
+						} } else if(this.currentScreen != null) {
 							this.currentScreen.handleMouseInput();
 						}
 					}
@@ -709,7 +897,6 @@ public final class Minecraft implements Runnable {
 							} while(!Keyboard.getEventKeyState());
 
 							if(Keyboard.getEventKey() == Keyboard.KEY_F) {
-								// only works when "in-game," don't feel like fixing right now
 								this.toggleFullscreen();
 								
 							} else {
@@ -725,11 +912,29 @@ public final class Minecraft implements Runnable {
 									else if (Keyboard.getEventKey() == Keyboard.KEY_F7) {
 										this.entityRenderer.grabLargeScreenshot();
 									}
-
-									else if (Keyboard.getEventKey() == Keyboard.KEY_F5) {
-										this.options.thirdPersonView = !this.options.thirdPersonView;
+									
+									else if (Keyboard.getEventKey() == Keyboard.KEY_F2) {
+									    entityRenderer.takeScreenshot(new File(this.mcDataDir, "screenshots").getAbsolutePath());
 									}
 
+									else if (Keyboard.getEventKey() == Keyboard.KEY_F5 && Keyboard.getEventKeyState()) {
+									    // Cycle through the camera modes
+										EntityRenderer.cameraMode = (EntityRenderer.cameraMode + 1) % 3;
+									    
+									    // Update the thirdPersonView option based on the camera mode
+									    this.options.thirdPersonView = (EntityRenderer.cameraMode != 0); // Enable third-person if not in first-person mode
+									}
+									
+									else if (Keyboard.getEventKey() == Keyboard.KEY_F3) {
+										this.options.showFPS = !this.options.showFPS;
+									}
+
+							        // Toggle GUI visibility when F1 is pressed
+										else if (Keyboard.getEventKey() == Keyboard.KEY_F1) {{
+								            hideGui = !hideGui;
+								        }
+										}
+									
 									else if (Keyboard.getEventKey() == this.options.keyBindInventory.keyCode) {
 										
 										if (this.thePlayer.isCreativeMode) {
@@ -753,8 +958,9 @@ public final class Minecraft implements Runnable {
 										this.thePlayer.dropPlayerItemWithRandomChoice(this.thePlayer.inventory.decrStackSize(this.thePlayer.inventory.currentItem, 1), false);
 									}
 									
-									// no idea what this code does
-									if (this.playerController instanceof PlayerControllerCreative) {
+									// no idea what this code does (Below describes the functionality of this code
+									// NOTE: It handles loading or saving the player position based on key binds
+									if (this.thePlayer.isCreativeMode) { // Check if the player is in creative mode
 										if(Keyboard.getEventKey() == this.options.keyBindLoad.keyCode) {
 											this.thePlayer.preparePlayerToSpawn();
 										}
@@ -825,6 +1031,23 @@ public final class Minecraft implements Runnable {
 
 	}
 	
+	public void updateMusicState() {
+	    if (this.options.music) {
+	        this.sndManager.playRandomMusicIfReady(); // Start music if the option is enabled
+	    } else {
+	        this.sndManager.stopBackgroundMusic(); // Stop music if the option is disabled
+	    }
+	}
+	
+	private int getArrowCountInSlot(InventoryPlayer inventory, int slotIndex) {
+	    // Check for arrows in the specified slot (slot 37 in this case)
+	    ItemStack arrowSlot = inventory.getStackInSlot(slotIndex);
+	    if (arrowSlot != null && arrowSlot.getItem() == Item.arrow) {
+	        return arrowSlot.stackSize; // Return the number of arrows in the slot
+	    }
+	    return 0;
+	}
+
 	public final short[] getLevelDimensions(int worldSize, int worldShape) {
 		
 		short xSize = (short) (128 << worldSize);
@@ -846,24 +1069,33 @@ public final class Minecraft implements Runnable {
 		return new short[] { xSize, ySize, zSize };
 	}
 
-	public final void generateLevel(int worldSize, int worldShape, int worldType, int worldTheme) {
-		
-		this.setLevel(null);
-		System.gc();
-		
-		LevelGenerator generator = new LevelGenerator(this.loadingScreen);
-		generator.islandGen   = worldType == 1;
-		generator.floatingGen = worldType == 2;
-		generator.flatGen     = worldType == 3;
-		generator.levelType   = worldTheme;
-		
-		short[] dim = getLevelDimensions(worldSize, worldShape);
+	public final void generateLevel(int var1, int var2, int var3, int var4, int var5) {
+	    this.setLevel((World) null);
+	    System.gc();
+	    String var6 = this.session != null ? this.session.username : "anonymous";
+	    LevelGenerator var7 = new LevelGenerator(this.loadingScreen, this);
+	    var7.islandGen = var3 == 1;
+	    var7.floatingGen = var3 == 2;
+	    var7.flatGen = var3 == 3;
+	    var7.levelType = var4;
+	    var1 = 128 << var1;
+	    var3 = var1;
+	    int height = var7.getHeightFromDepth(var5);
 
-		String username = this.session != null ? this.session.username : "anonymous";
-		World world = generator.generate(username, dim[0], dim[2], dim[1]); // for some reason goes [x, z, y]
-		
-		this.setLevel(world);
+	    short var9 = (short) height;
+	    if (var2 == 1) {
+	        var1 /= 2;
+	        var3 <<= 1;
+	    } else if (var2 == 2) {
+	        var1 /= 2;
+	        var3 = var1;
+	    }
+
+	    World var8 = var7.generate(var6, var1, var3, var9);
+	    this.setLevel(var8);
 	}
+
+
 
 	public final void setLevel(World var1) {
 		if(this.theWorld != null) {
@@ -894,9 +1126,9 @@ public final class Minecraft implements Runnable {
 				}
 			}
 
-			if(this.thePlayer != null) {
-				this.thePlayer.movementInput = new MovementInputFromOptions(this.options);
-				this.playerController.onRespawn(this.thePlayer);
+			if (this.thePlayer != null) {
+			    this.thePlayer.movementInput = new MovementInputFromOptions(this.options, this);
+			    this.playerController.onRespawn(this.thePlayer);
 			}
 
 			if(this.renderGlobal != null) {
@@ -920,3 +1152,4 @@ public final class Minecraft implements Runnable {
 		System.gc();
 	}
 }
+

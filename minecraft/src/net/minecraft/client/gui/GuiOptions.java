@@ -13,7 +13,17 @@ public final class GuiOptions extends GuiScreen {
 		this.options = var2;
 	}
 
+	// This method will be called whenever the screen is resized (so the GUI buttons don't break when resizing the window or entering/exiting fullscreen)
+	public void resize(int width, int height) {
+	    this.width = width;
+	    this.height = height;
+	    this.initGui(); // Reinitialize GUI elements with the new size
+	}
+
 	public final void initGui() {
+		// Clear existing controls to avoid duplications
+		this.controlList.clear();
+
 		for(int i = 0; i < this.options.numberOfOptions; i++) {
 			this.controlList.add(new GuiButtonText(i, this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), 150, 20, this.options.setOptionString(i)));
 		}

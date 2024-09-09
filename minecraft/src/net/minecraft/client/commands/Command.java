@@ -8,8 +8,10 @@ public abstract class Command {
 			new CommandHelp(),
 			new CommandGive(),
 			new CommandGamemode(),
-			new CommandEnchant()
-		};
+			new CommandEnchant(),
+			new CommandSpawnEntity(),
+			new CommandDeath()
+	};
 	
 	public abstract String getName();
 

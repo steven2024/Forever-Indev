@@ -34,76 +34,101 @@ public final class RenderBlocks {
 		Tessellator var6;
 		float var10;
 		boolean var26;
-		if(var5 == 0) {
-			var6 = Tessellator.instance;
-			var26 = false;
-			if(this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3 - 1, var4, 0)) {
-				var10 = var1.getBlockBrightness(this.blockAccess, var2, var3 - 1, var4);
-				if(Block.lightValue[var1.blockID] > 0) {
-					var10 = 1.0F;
-				}
+        if (var5 == 0) {
+            var6 = Tessellator.instance;
+            var26 = false;
+            if (this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3 - 1, var4, 0)) {
+                // Get brightness for bottom face
+                var10 = var1.getBlockBrightness(this.blockAccess, var2, var3 - 1, var4);
+                if (Block.lightValue[var1.blockID] > 0) {
+                    var10 = 1.0F;
+                }
 
-				var6.setColorOpaque_F(0.5F * var10, 0.5F * var10, 0.5F * var10);
-				this.renderBlockBottom(var1, (float)var2, (float)var3, (float)var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 0));
-				var26 = true;
-			}
+                // Get color from world type
+                int textureColor = getColorForWorldType(var1.getBlockTexture(this.blockAccess, var2, var3, var4, 0));
+                float[] rgb = convertColorToRGB(textureColor);
 
-			if(this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3 + 1, var4, 1)) {
-				var10 = var1.getBlockBrightness(this.blockAccess, var2, var3 + 1, var4);
-				if(Block.lightValue[var1.blockID] > 0) {
-					var10 = 1.0F;
-				}
+                // Apply brightness to color
+                var6.setColorOpaque_F(rgb[0] * 0.5F * var10, rgb[1] * 0.5F * var10, rgb[2] * 0.5F * var10);
+                this.renderBlockBottom(var1, (float) var2, (float) var3, (float) var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 0));
+                var26 = true;
+            }
 
-				var6.setColorOpaque_F(var10 * 1.0F, var10 * 1.0F, var10 * 1.0F);
-				this.renderBlockTop(var1, (float)var2, (float)var3, (float)var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 1));
-				var26 = true;
-			}
+            if (this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3 + 1, var4, 1)) {
+                // Get brightness for top face
+                var10 = var1.getBlockBrightness(this.blockAccess, var2, var3 + 1, var4);
+                if (Block.lightValue[var1.blockID] > 0) {
+                    var10 = 1.0F;
+                }
 
-			if(this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3, var4 - 1, 2)) {
-				var10 = var1.getBlockBrightness(this.blockAccess, var2, var3, var4 - 1);
-				if(Block.lightValue[var1.blockID] > 0) {
-					var10 = 1.0F;
-				}
+                // Get color from texture
+                int textureColor = getColorForWorldType(var1.getBlockTexture(this.blockAccess, var2, var3, var4, 1));
+                float[] rgb = convertColorToRGB(textureColor);
 
-				var6.setColorOpaque_F(0.8F * var10, 0.8F * var10, 0.8F * var10);
-				this.renderBlockNorth(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 2));
-				var26 = true;
-			}
+                // Apply brightness to color
+                var6.setColorOpaque_F(rgb[0] * var10, rgb[1] * var10, rgb[2] * var10);
+                this.renderBlockTop(var1, (float) var2, (float) var3, (float) var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 1));
+                var26 = true;
+            }
 
-			if(this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3, var4 + 1, 3)) {
-				var10 = var1.getBlockBrightness(this.blockAccess, var2, var3, var4 + 1);
-				if(Block.lightValue[var1.blockID] > 0) {
-					var10 = 1.0F;
-				}
+            // Other faces with similar logic for brightness and color
+            if (this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3, var4 - 1, 2)) {
+                var10 = var1.getBlockBrightness(this.blockAccess, var2, var3, var4 - 1);
+                if (Block.lightValue[var1.blockID] > 0) {
+                    var10 = 1.0F;
+                }
 
-				var6.setColorOpaque_F(0.8F * var10, 0.8F * var10, 0.8F * var10);
-				this.renderBlockSouth(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 3));
-				var26 = true;
-			}
+                int textureColor = getColorForWorldType(var1.getBlockTexture(this.blockAccess, var2, var3, var4, 2));
+                float[] rgb = convertColorToRGB(textureColor);
 
-			if(this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2 - 1, var3, var4, 4)) {
-				var10 = var1.getBlockBrightness(this.blockAccess, var2 - 1, var3, var4);
-				if(Block.lightValue[var1.blockID] > 0) {
-					var10 = 1.0F;
-				}
+                var6.setColorOpaque_F(rgb[0] * 0.8F * var10, rgb[1] * 0.8F * var10, rgb[2] * 0.8F * var10);
+                this.renderBlockNorth(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 2));
+                var26 = true;
+            }
 
-				var6.setColorOpaque_F(0.6F * var10, 0.6F * var10, 0.6F * var10);
-				this.renderBlockWest(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 4));
-				var26 = true;
-			}
+            if (this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2, var3, var4 + 1, 3)) {
+                var10 = var1.getBlockBrightness(this.blockAccess, var2, var3, var4 + 1);
+                if (Block.lightValue[var1.blockID] > 0) {
+                    var10 = 1.0F;
+                }
 
-			if(this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2 + 1, var3, var4, 5)) {
-				var10 = var1.getBlockBrightness(this.blockAccess, var2 + 1, var3, var4);
-				if(Block.lightValue[var1.blockID] > 0) {
-					var10 = 1.0F;
-				}
+                int textureColor = getColorForWorldType(var1.getBlockTexture(this.blockAccess, var2, var3, var4, 3));
+                float[] rgb = convertColorToRGB(textureColor);
 
-				var6.setColorOpaque_F(0.6F * var10, 0.6F * var10, 0.6F * var10);
-				this.renderBlockEast(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 5));
-				var26 = true;
-			}
+                var6.setColorOpaque_F(rgb[0] * 0.8F * var10, rgb[1] * 0.8F * var10, rgb[2] * 0.8F * var10);
+                this.renderBlockSouth(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 3));
+                var26 = true;
+            }
 
-			return var26;
+            if (this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2 - 1, var3, var4, 4)) {
+                var10 = var1.getBlockBrightness(this.blockAccess, var2 - 1, var3, var4);
+                if (Block.lightValue[var1.blockID] > 0) {
+                    var10 = 1.0F;
+                }
+
+                int textureColor = getColorForWorldType(var1.getBlockTexture(this.blockAccess, var2, var3, var4, 4));
+                float[] rgb = convertColorToRGB(textureColor);
+
+                var6.setColorOpaque_F(rgb[0] * 0.6F * var10, rgb[1] * 0.6F * var10, rgb[2] * 0.6F * var10);
+                this.renderBlockWest(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 4));
+                var26 = true;
+            }
+
+            if (this.renderAllFaces || var1.shouldSideBeRendered(this.blockAccess, var2 + 1, var3, var4, 5)) {
+                var10 = var1.getBlockBrightness(this.blockAccess, var2 + 1, var3, var4);
+                if (Block.lightValue[var1.blockID] > 0) {
+                    var10 = 1.0F;
+                }
+
+                int textureColor = getColorForWorldType(var1.getBlockTexture(this.blockAccess, var2, var3, var4, 5));
+                float[] rgb = convertColorToRGB(textureColor);
+
+                var6.setColorOpaque_F(rgb[0] * 0.6F * var10, rgb[1] * 0.6F * var10, rgb[2] * 0.6F * var10);
+                this.renderBlockEast(var1, var2, var3, var4, var1.getBlockTexture(this.blockAccess, var2, var3, var4, 5));
+                var26 = true;
+            }
+
+            return var26;
 		} else {
 			float var11;
 			float var22;
@@ -446,6 +471,25 @@ public final class RenderBlocks {
 		}
 	}
 
+    /**
+     * Sets the RGB color for a world type.
+     */
+	// Get world type
+	int worldLevelType = World.levelType;
+    private int getColorForWorldType(int textureId) {
+    	return (worldLevelType == 1) ? 0xB33A0B : 0xFFFFFF; // Hell world or default whit
+    }
+
+    /**
+     * Converts an integer color to RGB float values.
+     */
+    private float[] convertColorToRGB(int color) {
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        return new float[]{red, green, blue};
+    }
+    
 	private void renderBlockTorch(Block var1, float var2, float var3, float var4, float var5, float var6) {
 		Tessellator var7 = Tessellator.instance;
 		int var19 = var1.getBlockTextureFromSide(0);

@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import net.minecraft.client.model.ModelBiped;
+import net.minecraft.client.render.EntityRenderer;
 import net.minecraft.client.render.RenderBlocks;
 import net.minecraft.client.render.RenderEngine;
 import net.minecraft.client.render.Tessellator;
@@ -137,44 +138,52 @@ public abstract class Render {
 			}
 		}
 
-		if(var1.fire > 0) {
-			GL11.glDisable(GL11.GL_LIGHTING);
-			int var26 = Block.fire.blockIndexInTexture;
-			var29 = (var26 & 15) << 4;
-			int var30 = var26 & 240;
-			var12 = (float)var29 / 256.0F;
-			float var31 = ((float)var29 + 15.99F) / 256.0F;
-			float var32 = (float)var30 / 256.0F;
-			float var33 = ((float)var30 + 15.99F) / 256.0F;
-			GL11.glPushMatrix();
-			GL11.glTranslatef(var2, var3, var4);
-			var34 = var1.width * 1.4F;
-			GL11.glScalef(var34, var34, var34);
-			this.loadTexture("/terrain.png");
-			Tessellator var35 = Tessellator.instance;
-			var36 = 1.0F;
-			var18 = 0.0F;
-			var19 = var1.height / var1.width;
-			GL11.glRotatef(-this.renderManager.playerViewY, 0.0F, 1.0F, 0.0F);
-			GL11.glTranslatef(0.0F, 0.0F, 0.4F + (float)((int)var19) * 0.02F);
-			GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-			var35.startDrawingQuads();
+		if (var1.fire > 0) {
+		    GL11.glDisable(GL11.GL_LIGHTING);
+		    int var26 = Block.fire.blockIndexInTexture;
+		    var29 = (var26 & 15) << 4;
+		    int var30 = var26 & 240;
+		    var12 = (float) var29 / 256.0F;
+		    float var31 = ((float) var29 + 15.99F) / 256.0F;
+		    float var32 = (float) var30 / 256.0F;
+		    float var33 = ((float) var30 + 15.99F) / 256.0F;
+		    GL11.glPushMatrix();
 
-			while(var19 > 0.0F) {
-				var35.addVertexWithUV(var36 - 0.5F, 0.0F - var18, 0.0F, var31, var33);
-				var35.addVertexWithUV(-0.5F, 0.0F - var18, 0.0F, var12, var33);
-				var35.addVertexWithUV(-0.5F, 1.4F - var18, 0.0F, var12, var32);
-				var35.addVertexWithUV(var36 - 0.5F, 1.4F - var18, 0.0F, var31, var32);
-				--var19;
-				--var18;
-				var36 *= 0.9F;
-				GL11.glTranslatef(0.0F, 0.0F, -0.04F);
-			}
+		    // Adjust fire position based on entity height
+		    GL11.glTranslatef(var2, var3 + (var1.height * -0.9F), var4);
+		    var34 = var1.width * 1.4F;
+		    GL11.glScalef(var34, var34, var34);
+		    this.loadTexture("/terrain.png");
+		    Tessellator var35 = Tessellator.instance;
+		    var36 = 1.0F;
+		    var18 = 0.0F;
+		    var19 = var1.height / var1.width;
 
-			var35.draw();
-			GL11.glPopMatrix();
-			GL11.glEnable(GL11.GL_LIGHTING);
+		    // Adjust rendering based on camera perspective
+		    int cameraMode = EntityRenderer.cameraMode;
+		    if (cameraMode == 2) {  // Front-facing third-person
+		        GL11.glRotatef(180.0F, 0.0F, 1.0F, 0.0F);  // Flip the fire to face forward
+		    }
+
+		    GL11.glRotatef(-this.renderManager.playerViewY, 0.0F, 1.0F, 0.0F);
+		    GL11.glTranslatef(0.0F, 0.0F, 0.4F + (float) ((int) var19) * 0.02F);
+		    GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		    var35.startDrawingQuads();
+
+		    while (var19 > 0.0F) {
+		        var35.addVertexWithUV(var36 - 0.5F, 0.0F - var18, 0.0F, var31, var33);
+		        var35.addVertexWithUV(-0.5F, 0.0F - var18, 0.0F, var12, var33);
+		        var35.addVertexWithUV(-0.5F, 1.4F - var18, 0.0F, var12, var32);
+		        var35.addVertexWithUV(var36 - 0.5F, 1.4F - var18, 0.0F, var31, var32);
+		        --var19;
+		        --var18;
+		        var36 *= 0.9F;
+		        GL11.glTranslatef(0.0F, 0.0F, -0.04F);
+		    }
+
+		    var35.draw();
+		    GL11.glPopMatrix();
+		    GL11.glEnable(GL11.GL_LIGHTING);
 		}
-
 	}
 }

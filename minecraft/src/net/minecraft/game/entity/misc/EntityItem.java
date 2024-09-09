@@ -29,7 +29,7 @@ public class EntityItem extends Entity {
 		this.motionY = 0.2F;
 		this.motionZ = (float) (Math.random() * 0.2 - 0.1);
 		
-		this.canTriggerWalking = false;
+		this.canTriggerWalking = true;
 		
 		this.item = item;
 	}

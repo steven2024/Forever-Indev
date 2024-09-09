@@ -2,151 +2,206 @@ package net.minecraft.client.gui;
 
 import java.awt.Dialog;
 import java.awt.FileDialog;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
+import java.io.ObjectInputStream;
 import net.minecraft.client.PlayerLoader;
 import net.minecraft.game.level.World;
 
 public class GuiLoadLevel extends GuiScreen implements Runnable {
-	
-	private GuiScreen parent;
-	private boolean finished = false;
-	private boolean loaded = false;
-	private String[] levels = null;
-	private String status = "";
-	protected String title = "Load level";
-	private boolean frozen = false;
-	private File selectedFile;
 
-	public GuiLoadLevel(GuiScreen parent) {
-		this.parent = parent;
-	}
+    protected GuiScreen parent;
+    private boolean finished = false;
+    private boolean loaded = false;
+    private String[] levels = new String[5];
+    private String status = "";
+    protected String title = "Load level";
+    private boolean frozen = false;
+    private File selectedFile;
 
-	public final void updateScreen() {
-		if(this.selectedFile != null) {
-			if(!this.selectedFile.getName().endsWith(".mclevel")) {
-				this.selectedFile = new File(this.selectedFile.getAbsolutePath() + ".mclevel");
-			}
+    private final int DELETE_BUTTON_ID_OFFSET = 100;
 
-			this.openLevel(this.selectedFile);
-			this.selectedFile = null;
-			this.mc.displayGuiScreen((GuiScreen)null);
-		}
+    public GuiLoadLevel(GuiScreen parent) {
+        this.parent = parent;
+        // Initialize the levels array with default values
+        for (int i = 0; i < levels.length; i++) {
+            levels[i] = "-";
+        }
+    }
 
-	}
+    public final void updateScreen() {
+        if (this.selectedFile != null) {
+            if (!this.selectedFile.getName().endsWith(".mclevel")) {
+                this.selectedFile = new File(this.selectedFile.getAbsolutePath() + ".mclevel");
+            }
 
-	public void run() {
-		try {
-			this.status = "Getting level list..";
-			URL var1 = new URL("http://" + this.mc.minecraftUri + "/listmaps.jsp?user=" + this.mc.session.username);
-			BufferedReader var3 = new BufferedReader(new InputStreamReader(var1.openConnection().getInputStream()));
-			this.levels = var3.readLine().split(";");
-			if(this.levels.length >= 5) {
-				this.setLevels(this.levels);
-				this.loaded = true;
-				return;
-			}
+            this.openLevel(this.selectedFile);
+            this.selectedFile = null;
+            this.mc.displayGuiScreen((GuiScreen) null);
+        }
+    }
 
-			this.status = this.levels[0];
-			this.finished = true;
-		} catch (Exception var2) {
-			var2.printStackTrace();
-			this.status = "Failed to load levels";
-			this.finished = true;
-		}
+    public void run() {
+        try {
+            this.status = "Getting level list...";
+            loadLocalLevels();
+            this.loaded = true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.status = "Failed to load levels";
+            this.finished = true;
+        }
+    }
 
-	}
+    protected void loadLocalLevels() {
+        File savesDir = new File(this.mc.mcDataDir, "saves");
+        for (int i = 0; i < 5; i++) {
+            File folder = new File(savesDir, "World" + i);
+            if (folder.exists() && folder.isDirectory()) {
+                File file = new File(folder, "level.mclevel");
+                if (file.exists()) {
+                    levels[i] = readWorldName(file);
+                } else {
+                    levels[i] = "-";
+                }
+            } else {
+                levels[i] = "-";
+            }
+        }
+        setLevels(levels);
+    }
 
-	protected void setLevels(String[] var1) {
-		
-		for(int i = 0; i < 5; i++) {
-			GuiButtonText button = (GuiButtonText) this.controlList.get(i);
-			
-			button.enabled = !var1[i].equals("-");
-			button.displayString = var1[i];
-			button.visible = true;
-		}
+    private String readWorldName(File file) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            return (String) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return "-";
+    }
 
-		this.controlList.get(5).visible = true;
-	}
+    protected void setLevels(String[] levels) {
+        // Ensure that levels is not null
+        if (levels == null) {
+            levels = new String[]{"-", "-", "-", "-", "-"};
+        }
 
-	public void initGui() {
-		new Thread(this).start();
+        this.controlList.clear();
+        int centerX = this.width / 2;
+        for (int i = 0; i < 5; i++) {
+            GuiButtonText levelButton = new GuiButtonText(i, centerX - 75, this.height / 6 + i * 24, 150, 20, levels[i]);
+            levelButton.enabled = !levels[i].equals("-"); // Disable the button if there's no level
+            this.controlList.add(levelButton);
 
-		for (int i = 0; i < 5; i++) {
-			this.controlList.add(new GuiButtonText(i, this.width / 2 - 100, this.height / 6 + i * 24, "---"));
-			this.controlList.get(i).visible = false;
-		}
+            // Add Delete Button
+            GuiButtonText deleteButton = new GuiButtonText(DELETE_BUTTON_ID_OFFSET + i, centerX + 85, this.height / 6 + i * 24, 20, 20, "-");
+            deleteButton.enabled = !levels[i].equals("-");
+            this.controlList.add(deleteButton);
+        }
+        this.controlList.add(new GuiButtonText(5, centerX - 75, this.height / 6 + 120 + 12, 150, 20, "Load file..."));
+        this.controlList.add(new GuiButtonText(6, centerX - 75, this.height / 6 + 168, 150, 20, "Cancel"));
+    }
 
-		this.controlList.add(new GuiButtonText(5, this.width / 2 - 100, this.height / 6 + 120 + 12, "Load file..."));
-		this.controlList.add(new GuiButtonText(6, this.width / 2 - 100, this.height / 6 + 168, "Cancel"));
-		
-		this.controlList.get(5).visible = false;
-	}
+    public void initGui() {
+        new Thread(this).start();
+        this.controlList.clear();
 
-	protected final void actionPerformed(GuiButton button) {
-		
-		if (this.frozen || !button.enabled)
-			return;
-				
-		if (this.loaded && button.id < 5) {
-			this.openLevel(button.id);
-		}
+        // Ensuring that levels array is initialized and set
+        if (levels == null || levels.length == 0) {
+            levels = new String[]{"-", "-", "-", "-", "-"};
+        }
 
-		if (this.finished || this.loaded && button.id == 5) {
-			this.frozen = true;
-			GuiLevelDialog var2 = new GuiLevelDialog(this);
-			var2.setDaemon(true);
-			var2.start();
-		}
+        this.setLevels(levels);
+    }
 
-		if (this.finished || this.loaded && button.id == 6) {
-			this.mc.displayGuiScreen(this.parent);
-		}
-	}
+    protected void actionPerformed(GuiButton button) {
+        if (this.frozen || !button.enabled) {
+            return;
+        }
 
-	protected FileDialog saveFileDialog() {
-		return new FileDialog((Dialog) null, "Load level", 0);
-	}
+        if (button.id < 5 && this.loaded) {
+            this.openLevel(button.id);
+        } else if (button.id >= DELETE_BUTTON_ID_OFFSET && button.id < DELETE_BUTTON_ID_OFFSET + 5) {
+            // Delete button functionality
+            this.deleteLevel(button.id - DELETE_BUTTON_ID_OFFSET);
+        } else if (button.id == 5) {
+            this.frozen = true;
+            GuiLevelDialog dialog = new GuiLevelDialog(this);
+            dialog.setDaemon(true);
+            dialog.start();
+        } else if (button.id == 6) {
+            this.mc.displayGuiScreen(this.parent);
+        }
+    }
 
-	protected void openLevel(int var1) {
-		this.mc.displayGuiScreen(null);
-		this.mc.setIngameFocus();
-	}
+    protected FileDialog saveFileDialog() {
+        return new FileDialog((Dialog) null, "Load level", FileDialog.LOAD);
+    }
 
-	public final void drawScreen(int mouseX, int mouseY) {
-		this.drawDefaultBackground();
-		drawCenteredString(this.fontRenderer, this.title, this.width / 2, 20, 16777215);
-		if(!this.loaded) {
-			drawCenteredString(this.fontRenderer, this.status, this.width / 2, this.height / 2 - 4, 16777215);
-		}
+    protected void openLevel(int slot) {
+        File savesDir = new File(this.mc.mcDataDir, "saves");
+        File folder = new File(savesDir, "World" + slot);
+        if (folder.exists() && folder.isDirectory()) {
+            File file = new File(folder, "level.mclevel");
+            if (file.exists()) {
+                openLevel(file);
+            }
+        }
+        this.mc.displayGuiScreen(null);
+        this.mc.setIngameFocus();
+    }
 
-		super.drawScreen(mouseX, mouseY);
-	}
+    private void deleteLevel(int slot) {
+        File savesDir = new File(this.mc.mcDataDir, "saves");
+        File folder = new File(savesDir, "World" + slot);
+        if (folder.exists() && folder.isDirectory()) {
+            deleteDirectory(folder);
+            loadLocalLevels(); // Refresh the levels after deletion
+        }
+    }
 
-	protected void openLevel(File file) {
-		try {
-			FileInputStream in = new FileInputStream(file);
-			World world = (new PlayerLoader(this.mc, this.mc.loadingScreen)).load(in);
-			in.close();
-			this.mc.setLevel(world);
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    private boolean deleteDirectory(File dir) {
+        if (dir.isDirectory()) {
+            for (File child : dir.listFiles()) {
+                if (!deleteDirectory(child)) {
+                    return false;
+                }
+            }
+        }
+        return dir.delete();
+    }
 
-	// no idea what these two functions do
-	
-	static File a(GuiLoadLevel var0, File var1) {
-		return var0.selectedFile = var1;
-	}
+    public final void drawScreen(int mouseX, int mouseY) {
+        this.drawDefaultBackground();
+        if (this.fontRenderer != null) {
+            drawCenteredString(this.fontRenderer, this.title, this.width / 2, 20, 16777215);
+        }
+        if (!this.loaded) {
+            if (this.fontRenderer != null) {
+                drawCenteredString(this.fontRenderer, this.status, this.width / 2, this.height / 2 - 4, 16777215);
+            }
+        }
+        if (this.controlList != null) {
+            super.drawScreen(mouseX, mouseY);  // Proceed with drawing the controls if everything is initialized
+        }
+    }
 
-	static boolean unknown(GuiLoadLevel var0, boolean var1) {
-		return var0.frozen = false;
-	}
+    protected void openLevel(File file) {
+        try (FileInputStream in = new FileInputStream(file); ObjectInputStream ois = new ObjectInputStream(in)) {
+            String worldName = (String) ois.readObject();
+            World world = (new PlayerLoader(this.mc, this.mc.loadingScreen)).load(in);
+            this.mc.setLevel(world);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    static File a(GuiLoadLevel var0, File var1) {
+        return var0.selectedFile = var1;
+    }
+
+    static boolean unknown(GuiLoadLevel var0, boolean var1) {
+        return var0.frozen = false;
+    }
 }

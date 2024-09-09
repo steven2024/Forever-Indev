@@ -1,6 +1,12 @@
 package net.minecraft.game.level.block;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+
+import org.lwjgl.util.vector.Vector3f;
+
+import net.minecraft.client.render.Quad;
 import net.minecraft.game.entity.misc.EntityItem;
 import net.minecraft.game.entity.player.EntityPlayer;
 import net.minecraft.game.entity.player.InventoryPlayer;
@@ -105,7 +111,21 @@ public class Block {
 	public static final Block mudBrick;
 	public static final Block cobbledBrick;
 	
-	protected String name;
+	// New Blocks (steve2024)
+	public static final Block cobbledStone;
+	public static final Block packedGravel;
+	public static final Block compressedDirt;
+	public static final Block clayBricks;
+	public static final Block tintedGlass;
+	public static final Block mossyCobbledStone;
+	public static final Block mossyStone;
+	public static final Block woodenPaver;
+	public static final Block wetSand;
+	public static final Block snow;
+	public static final Block ice;
+	public static final Block snowBlock;
+	
+	protected String name;  // Changed from static to instance variable
 	protected Rarity rarity; 
 	public final int blockID;
 	public final Material material;
@@ -122,28 +142,28 @@ public class Block {
 	public StepSound stepSound;
 	public float blockParticleGravity;
 
+	// Constructor
 	protected Block(String name, int blockID, Material material) {
-		rarity = Rarity.COMMON;
-		
-		this.stepSound = soundPowderFootstep;
-		this.blockParticleGravity = 1.0F;
-		if(blocksList[blockID] != null) {
-			throw new IllegalArgumentException("blockID " + blockID + " is already taken by " + blocksList[blockID] + " when adding " + this);
-		} else {
-			this.name = name;
-			this.blockID = blockID;
-			this.material = material;
-			
-			this.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-			
-			blocksList[blockID] = this;
-			opaqueCubeLookup[blockID] = this.isOpaqueCube();
-			lightOpacity[blockID] = this.isOpaqueCube() ? 255 : 0;
-			canBlockGrass[blockID] = this.renderAsNormalBlock();
-			isBlockFluid[blockID] = false;
-		}
+	    this.name = name;  // Now each block has its own name
+	    this.rarity = Rarity.COMMON;
+	    this.stepSound = soundPowderFootstep;
+	    this.blockParticleGravity = 1.0F;
+	    if(blocksList[blockID] != null) {
+	        throw new IllegalArgumentException("blockID " + blockID + " is already taken by " + blocksList[blockID] + " when adding " + this);
+	    } else {
+	        this.blockID = blockID;
+	        this.material = material;
+	        
+	        this.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+	        
+	        blocksList[blockID] = this;
+	        opaqueCubeLookup[blockID] = this.isOpaqueCube();
+	        lightOpacity[blockID] = this.isOpaqueCube() ? 255 : 0;
+	        canBlockGrass[blockID] = this.renderAsNormalBlock();
+	        isBlockFluid[blockID] = false;
+	    }
 	}
-
+	
 	protected Block(String name, int blockID, int blockIndexInTexture, Material material) {
 		this(name, blockID, material);
 		this.blockIndexInTexture = blockIndexInTexture;
@@ -153,8 +173,12 @@ public class Block {
 		lightOpacity[this.blockID] = var1;
 		return this;
 	}
-
-	private Block setLightValue(float var1) {
+	
+	   public int getLightValue() {
+	        return lightValue[this.blockID]; // Returns the light value for the specific block ID
+	   }
+	        
+	protected Block setLightValue(float var1) {
 		lightValue[this.blockID] = (int)(15.0F * var1);
 		return this;
 	}
@@ -693,8 +717,49 @@ public class Block {
 		
 		cobbledBrick = new Block("Cobbled Brick", 67, 100, Material.rock).setHardness(2.0F).setResistance(10.0F);
 		cobbledBrick.stepSound = soundStoneFootstep;
-		
 
+		// New blocks (steve2024)	
+		
+		cobbledStone = new Block("Cobbled Stone", 68, 101, Material.rock).setHardness(2.0F).setResistance(10.0F);
+		cobbledStone.stepSound = soundStoneFootstep;
+
+		packedGravel = new Block("Packed Gravel", 69, 102, Material.ground).setHardness(0.6F).setResistance(10.0F);
+		packedGravel.stepSound = soundGravelFootstep;
+
+		compressedDirt = new Block("Compressed Dirt", 70, 103, Material.ground).setHardness(0.5F).setResistance(5.0F);
+		compressedDirt.stepSound = soundGravelFootstep;
+
+		clayBricks = new Block("Clay Bricks", 71, 104, Material.rock).setHardness(2.0F).setResistance(10.0F);
+		clayBricks.stepSound = soundStoneFootstep;
+
+		tintedGlass = new BlockGlass("Tinted Glass", 72, 105, Material.glass).setHardness(0.5F);
+		tintedGlass.stepSound = soundGlassFootstep;
+
+		mossyCobbledStone = new Block("Mossy Cobbled Stone", 73, 106, Material.rock).setHardness(2.0F).setResistance(10.0F);
+		mossyCobbledStone.stepSound = soundStoneFootstep;
+
+		mossyStone = new Block("Mossy Stone", 74, 107, Material.rock).setHardness(1.5F).setResistance(10.0F);
+		mossyStone.stepSound = soundStoneFootstep;
+		
+		woodenPaver = new Block("Wooden Paver", 75, 108, Material.wood).setHardness(1.5F).setResistance(5.0F);
+		woodenPaver.stepSound = soundWoodFootstep;
+		
+	    // Initialize wetSand block
+	    wetSand = new BlockGravity("Wet Sand", 76, 109).setHardness(0.6F);
+	    wetSand.stepSound = soundSandFootstep;
+	    
+	 // Initialize Snow block
+	    snow = new BlockSnow("Snow", 77, 113).setHardness(0.6F);
+	    snow.stepSound = soundClothFootstep; // Snow might use similar step sound to sand
+
+	    // Initialize Ice block
+	    ice = new BlockIce("Ice", 78, 112).setHardness(0.5F).setSlipperiness(0.98F);
+	    ice.stepSound = soundGlassFootstep; // Assuming ice uses glass-like footstep sound
+
+	    // Initialize SnowBlock block (Full block of snow)
+	    snowBlock = new BlockSnowBlock("Snow Block", 79, 113).setHardness(0.5F);
+	    snowBlock.stepSound = soundClothFootstep; // A soft footstep sound similar to cloth
+	    
 		// make an item for every block
 		for(int i = 0; i < 256; i++) {
 			
@@ -702,6 +767,68 @@ public class Block {
 				Item.itemsList[i] = new ItemBlock(blocksList[i].name, blocksList[i].rarity, i);
 			}
 		}
-
 	}
+
+    public List<Quad> getQuads(int x, int y, int z) {
+        List<Quad> quads = new ArrayList<>();
+
+        // Define vertices for each face of the block
+        Vector3f[] bottomFace = {
+            new Vector3f(x, y, z),
+            new Vector3f(x + 1, y, z),
+            new Vector3f(x + 1, y, z + 1),
+            new Vector3f(x, y, z + 1)
+        };
+        Vector3f[] topFace = {
+            new Vector3f(x, y + 1, z),
+            new Vector3f(x + 1, y + 1, z),
+            new Vector3f(x + 1, y + 1, z + 1),
+            new Vector3f(x, y + 1, z + 1)
+        };
+        Vector3f[] northFace = {
+            new Vector3f(x, y, z),
+            new Vector3f(x + 1, y, z),
+            new Vector3f(x + 1, y + 1, z),
+            new Vector3f(x, y + 1, z)
+        };
+        Vector3f[] southFace = {
+            new Vector3f(x, y, z + 1),
+            new Vector3f(x + 1, y, z + 1),
+            new Vector3f(x + 1, y + 1, z + 1),
+            new Vector3f(x, y + 1, z + 1)
+        };
+        Vector3f[] westFace = {
+            new Vector3f(x, y, z),
+            new Vector3f(x, y, z + 1),
+            new Vector3f(x, y + 1, z + 1),
+            new Vector3f(x, y + 1, z)
+        };
+        Vector3f[] eastFace = {
+            new Vector3f(x + 1, y, z),
+            new Vector3f(x + 1, y, z + 1),
+            new Vector3f(x + 1, y + 1, z + 1),
+            new Vector3f(x + 1, y + 1, z)
+        };
+
+        // Create quads for each face
+        quads.add(new Quad(bottomFace));
+        quads.add(new Quad(topFace));
+        quads.add(new Quad(northFace));
+        quads.add(new Quad(southFace));
+        quads.add(new Quad(westFace));
+        quads.add(new Quad(eastFace));
+
+        return quads;
+    }
+
+    protected float slipperiness = 0.6F; // Default slipperiness
+
+    public float getSlipperiness() {
+        return slipperiness;
+    }
+
+    public Block setSlipperiness(float slipperiness) {
+        this.slipperiness = slipperiness;
+        return this;
+    }
 }

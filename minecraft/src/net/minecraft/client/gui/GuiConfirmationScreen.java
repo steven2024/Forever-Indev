@@ -1,8 +1,12 @@
 package net.minecraft.client.gui;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.GameSettings;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.game.level.World;
 
 public class GuiConfirmationScreen extends GuiScreen {
 
@@ -31,11 +35,8 @@ public class GuiConfirmationScreen extends GuiScreen {
         if (this.mc.options.showExitConfirmation) {
             switch (button.id) {
                 case 0:
-                    // Save level and then exit
-                    if (this.mc.session != null) {
-                        this.mc.displayGuiScreen(new GuiSaveLevel(this.parentScreen));
-                    }
-                    exit();
+                            // Open the GuiSaveLevel screen to allow the user to choose a save location
+                            this.mc.displayGuiScreen(new GuiSaveLevel(this.parentScreen));
                     break;
 
                 case 1:
@@ -48,6 +49,18 @@ public class GuiConfirmationScreen extends GuiScreen {
                     this.mc.displayGuiScreen(this.parentScreen);
                     break;
             }
+        }
+    }
+
+    private void saveCurrentWorld(File saveFile) {
+        try {
+            // Replace this with actual world-saving logic
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(saveFile));
+            out.writeObject(this.mc.theWorld);
+            out.close();
+            System.out.println("World saved to " + saveFile.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

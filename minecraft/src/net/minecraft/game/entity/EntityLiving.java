@@ -3,8 +3,14 @@ package net.minecraft.game.entity;
 import com.mojang.nbt.NBTTagCompound;
 import java.util.List;
 
+import net.minecraft.game.entity.monster.EntityCreeper;
+import net.minecraft.game.entity.monster.EntitySkeleton;
+import net.minecraft.game.entity.monster.EntitySpider;
+import net.minecraft.game.entity.monster.EntityZombie;
 import net.minecraft.game.entity.player.EntityPlayer;
+import net.minecraft.game.entity.player.EntityPlayerSP;
 import net.minecraft.game.item.Item;
+import net.minecraft.game.item.ItemStack;
 import net.minecraft.game.item.enchant.EnchantType;
 import net.minecraft.game.level.World;
 import net.minecraft.game.level.block.Block;
@@ -48,7 +54,7 @@ public class EntityLiving extends Entity {
 		this.entityAge = 0;
 		this.isJumping = false;
 		//this.defaultPitch = 0.0F;
-		this.moveSpeed = 0.7F;
+		this.moveSpeed = 10.7F;
 		this.health = 10;
 		this.preventEntitySpawning = true;
 		Math.random();
@@ -70,7 +76,7 @@ public class EntityLiving extends Entity {
 		return !this.isDead;
 	}
 
-	protected float getEyeHeight() {
+	public float getEyeHeight() {
 		return this.height * 0.85F;
 	}
 
@@ -223,69 +229,90 @@ public class EntityLiving extends Entity {
 		}
 	}
 
+	@Override
 	public boolean attackThisEntity(Entity attacker, int damage) {
-		
-		// if attacker is the player, check if their attacking item is enchanted
-		if (attacker instanceof EntityPlayer) {
-			
-			EntityPlayer player = (EntityPlayer) attacker;
-			
-			int fieryLevel = player.inventory.getCurrentItem().enchantLevelOf(EnchantType.fiery);
-			
-			if (fieryLevel > 0)
-				this.fire = 50 * fieryLevel; 
-		}
-		
-		//
-		this.entityAge = 0;
-		
-		if(this.health <= 0) {
-			return false;
-		} else {
-			this.limbYaw = 1.5F;
-			if((float)this.heartsLife > (float)this.heartsHalvesLife / 2.0F) {
-				if(this.prevHealth - damage >= this.health) {
-					return false;
-				}
+	    // if attacker is the player, check if their attacking item is enchanted
+	    if (attacker instanceof EntityPlayer) {
+	        EntityPlayer player = (EntityPlayer) attacker;
+	        ItemStack currentItem = player.inventory.getCurrentItem();
 
-				this.health = this.prevHealth - damage;
-			} else {
-				this.prevHealth = this.health;
-				this.heartsLife = this.heartsHalvesLife;
-				this.health -= damage;
-				this.hurtTime = this.maxHurtTime = 10;
-			}
+	        if (currentItem != null) {  // Check if currentItem is not null
+	            int fieryLevel = currentItem.enchantLevelOf(EnchantType.fiery);
 
-			this.attackedAtYaw = 0.0F;
-			if(attacker != null) {
-				float var6 = attacker.posX - this.posX;
-				float var3 = attacker.posZ - this.posZ;
-				this.attackedAtYaw = (float)(Math.atan2((double)var3, (double)var6) * 180.0D / (double)((float)Math.PI)) - this.rotationYaw;
-				float var5 = MathHelper.sqrt_float(var6 * var6 + var3 * var3);
-				this.motionX /= 2.0F;
-				this.motionY /= 2.0F;
-				this.motionZ /= 2.0F;
-				this.motionX -= var6 / var5 * 0.4F;
-				this.motionY += 0.4F;
-				this.motionZ -= var3 / var5 * 0.4F;
-				if(this.motionY > 0.4F) {
-					this.motionY = 0.4F;
-				}
-			} else {
-				this.attackedAtYaw = (float)((int)(Math.random() * 2.0D) * 180);
-			}
+	            if (fieryLevel > 0)
+	                this.fire = 50 * fieryLevel; 
+	        }
+	    }
 
-			if(this.health <= 0) {
-				this.worldObj.playSoundAtEntity(this, this.getDeathSound(), 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
-				this.onDeath(attacker);
-			} else {
-				this.worldObj.playSoundAtEntity(this, this.getHurtSound(), 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
-			}
+	    this.entityAge = 0;
 
-			return true;
-			
-		}
+	    if (this.health <= 0) {
+	        return false;
+	    } else {
+	        this.limbYaw = 1.5F;
+	        if ((float) this.heartsLife > (float) this.heartsHalvesLife / 2.0F) {
+	            if (this.prevHealth - damage >= this.health) {
+	                return false;
+	            }
+
+	            this.health = this.prevHealth - damage;
+	        } else {
+	            this.prevHealth = this.health;
+	            this.heartsLife = this.heartsHalvesLife;
+	            this.health -= damage;
+	            this.hurtTime = this.maxHurtTime = 10;
+	        }
+
+	        this.attackedAtYaw = 0.0F;
+	        if (attacker != null) {
+	            float var6 = attacker.posX - this.posX;
+	            float var3 = attacker.posZ - this.posZ;
+	            this.attackedAtYaw = (float) (Math.atan2((double) var3, (double) var6) * 180.0D / (double) ((float) Math.PI)) - this.rotationYaw;
+	            float var5 = MathHelper.sqrt_float(var6 * var6 + var3 * var3);
+	            this.motionX /= 2.0F;
+	            this.motionY /= 2.0F;
+	            this.motionZ /= 2.0F;
+	            this.motionX -= var6 / var5 * 0.4F;
+	            this.motionY += 0.4F;
+	            this.motionZ -= var3 / var5 * 0.4F;
+	            if (this.motionY > 0.4F) {
+	                this.motionY = 0.4F;
+	            }
+	        } else {
+	            this.attackedAtYaw = (float) ((int) (Math.random() * 2.0D) * 180);
+	        }
+
+	        if (this.health <= 0) {
+	            this.worldObj.playSoundAtEntity(this, this.getDeathSound(), 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
+	            this.onDeath(attacker);
+
+	            // Check if the attacker is a player and add score
+	            if (attacker instanceof EntityPlayer) {
+	                EntityPlayerSP player = (EntityPlayerSP) attacker;
+	                player.addScore(getScoreForMob(this));
+	            }
+	        } else {
+	            this.worldObj.playSoundAtEntity(this, this.getHurtSound(), 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
+	        }
+
+	        return true;
+	    }
 	}
+
+	// Method to determine the score for different mob types
+	private int getScoreForMob(Entity mob) {
+	    if (mob instanceof EntityZombie) {
+	        return 100; // Score for killing a zombie
+	    } else if (mob instanceof EntitySkeleton) {
+	        return 150; // Score for killing a skeleton
+	    } else if (mob instanceof EntityCreeper) {
+	        return 200; // Score for killing a creeper
+	    } else if (mob instanceof EntitySpider) {
+	        return 120; // Score for killing a spider
+	    }
+	    return 50; // Default score for killing other mobs
+	}
+
 
 	protected String getLivingSound() {
 		return null;
@@ -382,106 +409,98 @@ public class EntityLiving extends Entity {
 	}
 
 	public void onLivingUpdate() {
-		++this.entityAge;
-		float var2;
-		float var3;
-		if(this.entityAge > 600 && this.rand.nextInt(800) == 0) {
-			Entity var1 = this.worldObj.getPlayerEntity();
-			if(var1 != null) {
-				var2 = var1.posX - this.posX;
-				var3 = var1.posY - this.posY;
-				float var5 = var1.posZ - this.posZ;
-				var2 = var2 * var2 + var3 * var3 + var5 * var5;
-				if(var2 < 1024.0F) {
-					this.entityAge = 0;
-				} else {
-					this.setEntityDead();
-				}
-			}
-		}
+	    ++this.entityAge;
+	    float var2;
+	    float var3;
+	    if (this.entityAge > 600 && this.rand.nextInt(800) == 0) {
+	        Entity var1 = this.worldObj.getPlayerEntity();
+	        if (var1 != null) {
+	            var2 = var1.posX - this.posX;
+	            var3 = var1.posY - this.posY;
+	            float var5 = var1.posZ - this.posZ;
+	            var2 = var2 * var2 + var3 * var3 + var5 * var5;
+	            if (var2 < 1024.0F) {
+	                this.entityAge = 0;
+	            } else {
+	                this.setEntityDead();
+	            }
+	        }
+	    }
 
-		if(this.health <= 0) {
-			this.isJumping = false;
-			this.moveStrafing = 0.0F;
-			this.moveForward = 0.0F;
-			this.randomYawVelocity = 0.0F;
-		} else {
-			this.updatePlayerActionState();
-		}
+	    if (this.health <= 0) {
+	        this.isJumping = false;
+	        this.moveStrafing = 0.0F;
+	        this.moveForward = 0.0F;
+	        this.randomYawVelocity = 0.0F;
+	    } else {
+	        this.updatePlayerActionState();
+	    }
 
-		boolean var6 = this.handleWaterMovement();
-		boolean var8 = this.handleLavaMovement();
-		if(this.isJumping) {
-			if(var6) {
-				this.motionY += 0.04F;
-			} else if(var8) {
-				this.motionY += 0.04F;
-			} else if(this.onGround) {
-				this.motionY = 0.42F;
-			}
-		}
+	    boolean inWater = this.handleWaterMovement();
+	    boolean inLava = this.handleLavaMovement();
+	    if (this.isJumping) {
+	        if (inWater) {
+	            this.motionY += 0.08F;  // Increase jump force in water
+	        } else if (inLava) {
+	            this.motionY += 0.08F;  // Increase jump force in lava
+	        } else if (this.onGround) {
+	            this.motionY = 0.42F;  // Normal jump force on ground
+	        }
+	    }
 
-		this.moveStrafing *= 0.98F;
-		this.moveForward *= 0.98F;
-		this.randomYawVelocity *= 0.9F;
-		var3 = this.moveForward;
-		var2 = this.moveStrafing;
-		float var4;
-		if(this.handleWaterMovement()) {
-			var4 = this.posY;
-			this.moveFlying(var2, var3, 0.02F);
-			this.moveEntity(this.motionX, this.motionY, this.motionZ);
-			this.motionX *= 0.8F;
-			this.motionY *= 0.8F;
-			this.motionZ *= 0.8F;
-			this.motionY = (float)((double)this.motionY - 0.02D);
-			if(this.isCollidedHorizontally && this.isOffsetPositionInLiquid(this.motionX, this.motionY + 0.6F - this.posY + var4, this.motionZ)) {
-				this.motionY = 0.3F;
-			}
-		} else if(this.handleLavaMovement()) {
-			var4 = this.posY;
-			this.moveFlying(var2, var3, 0.02F);
-			this.moveEntity(this.motionX, this.motionY, this.motionZ);
-			this.motionX *= 0.5F;
-			this.motionY *= 0.5F;
-			this.motionZ *= 0.5F;
-			this.motionY = (float)((double)this.motionY - 0.02D);
-			if(this.isCollidedHorizontally && this.isOffsetPositionInLiquid(this.motionX, this.motionY + 0.6F - this.posY + var4, this.motionZ)) {
-				this.motionY = 0.3F;
-			}
-		} else {
-			this.moveFlying(var2, var3, this.onGround ? 0.1F : 0.02F);
-			this.moveEntity(this.motionX, this.motionY, this.motionZ);
-			this.motionX *= 0.91F;
-			this.motionY *= 0.98F;
-			this.motionZ *= 0.91F;
-			this.motionY = (float)((double)this.motionY - 0.08D);
-			if(this.onGround) {
-				this.motionX *= 0.6F;
-				this.motionZ *= 0.6F;
-			}
-		}
+	    this.moveStrafing *= 0.98F;
+	    this.moveForward *= 0.98F;
+	    this.randomYawVelocity *= 0.9F;
 
-		this.prevLimbYaw = this.limbYaw;
-		var4 = this.posX - this.prevPosX;
-		var2 = this.posZ - this.prevPosZ;
-		var2 = MathHelper.sqrt_float(var4 * var4 + var2 * var2) * 4.0F;
-		if(var2 > 1.0F) {
-			var2 = 1.0F;
-		}
+	    float moveStrafing = this.moveStrafing;
+	    float moveForward = this.moveForward;
+	    float var4;
 
-		this.limbYaw += (var2 - this.limbYaw) * 0.4F;
-		this.limbSwing += this.limbYaw;
-		List var9 = this.worldObj.getEntitiesWithinAABBExcludingEntity(this, this.boundingBox.expand(0.2F, 0.0F, 0.2F));
-		if(var9 != null && var9.size() > 0) {
-			for(int var7 = 0; var7 < var9.size(); ++var7) {
-				Entity var10 = (Entity)var9.get(var7);
-				if(var10.canBePushed()) {
-					var10.applyEntityCollision(this);
-				}
-			}
-		}
+	    if (inWater) {
+	        this.moveFlying(this.moveStrafing, this.moveForward, 0.02F);
+	        this.moveEntity(this.motionX, this.motionY, this.motionZ);
+	        this.motionX *= 0.8F;
+	        this.motionY *= 0.8F;
+	        this.motionZ *= 0.8F;
+	    } else if (inLava) {
+	        this.moveFlying(this.moveStrafing, this.moveForward, 0.02F);
+	        this.moveEntity(this.motionX, this.motionY, this.motionZ);
+	        this.motionX *= 0.5F;
+	        this.motionY *= 0.5F;
+	        this.motionZ *= 0.5F;
+	    } else {
+	        this.moveFlying(this.moveStrafing, this.moveForward, this.onGround ? 0.1F : 0.02F);
+	        this.moveEntity(this.motionX, this.motionY, this.motionZ);
+	        this.motionX *= 0.91F;
+	        this.motionY *= 0.98F;
+	        this.motionZ *= 0.91F;
+	        this.motionY -= 0.08D; // Gravity effect
 
+	        if (this.onGround) {
+	            this.motionX *= 0.6F;
+	            this.motionZ *= 0.6F;
+	        }
+	    }
+
+	    this.prevLimbYaw = this.limbYaw;
+	    var4 = this.posX - this.prevPosX;
+	    var2 = this.posZ - this.prevPosZ;
+	    var2 = MathHelper.sqrt_float(var4 * var4 + var2 * var2) * 4.0F;
+	    if (var2 > 1.0F) {
+	        var2 = 1.0F;
+	    }
+
+	    this.limbYaw += (var2 - this.limbYaw) * 0.4F;
+	    this.limbSwing += this.limbYaw;
+	    List var9 = this.worldObj.getEntitiesWithinAABBExcludingEntity(this, this.boundingBox.expand(0.2F, 0.0F, 0.2F));
+	    if (var9 != null && var9.size() > 0) {
+	        for (int var7 = 0; var7 < var9.size(); ++var7) {
+	            Entity var10 = (Entity) var9.get(var7);
+	            if (var10.canBePushed()) {
+	                var10.applyEntityCollision(this);
+	            }
+	        }
+	    }
 	}
 
 	protected void updatePlayerActionState() {

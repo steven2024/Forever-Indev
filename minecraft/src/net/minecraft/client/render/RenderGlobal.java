@@ -1,5 +1,6 @@
 package net.minecraft.client.render;
 
+import java.net.MalformedURLException;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +68,7 @@ public final class RenderGlobal implements IWorldAccess {
 	public RenderGlobal(Minecraft var1, RenderEngine var2) {
 		this.mc = var1;
 		this.renderEngine = var2;
+		
 		this.glGenList = GL11.glGenLists(2);
 		this.glRenderListBase = GL11.glGenLists(786432);
 		this.occlusionEnabled = GLContext.getCapabilities().GL_ARB_occlusion_query;
@@ -230,11 +232,15 @@ public final class RenderGlobal implements IWorldAccess {
 	}
 
 	public final String getDebugInfoRenders() {
-		return "C: " + this.renderersBeingRendered + "/" + this.renderersLoaded + ". F: " + this.renderersBeingClipped + ", O: " + this.renderersBeingOccluded;
+	    return "Renderers: " + this.renderersBeingRendered + "/" + this.renderersLoaded + 
+	           ". Clipped: " + this.renderersBeingClipped + 
+	           ", Occluded: " + this.renderersBeingOccluded;
 	}
 
 	public final String getDebugInfoEntities() {
-		return "E: " + this.countEntitiesRendered + "/" + this.countEntitiesTotal + ". B: " + this.countEntitiesHidden + ", I: " + (this.countEntitiesTotal - this.countEntitiesHidden - this.countEntitiesRendered);
+	    return "Entities: " + this.countEntitiesRendered + "/" + this.countEntitiesTotal + 
+	           ". Hidden: " + this.countEntitiesHidden + 
+	           ", Invisible: " + (this.countEntitiesTotal - this.countEntitiesHidden - this.countEntitiesRendered);
 	}
 
 	public final int sortAndRender(EntityPlayer var1, int var2) {
@@ -476,7 +482,6 @@ public final class RenderGlobal implements IWorldAccess {
 
 		var12.draw();
 	}
-
 	public final void oobGroundRenderer() {
 		float var1 = this.worldObj.getLightBrightness(0, this.worldObj.getGroundLevel(), 0);
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.renderEngine.getTexture("/dirt.png"));
@@ -750,7 +755,7 @@ public final class RenderGlobal implements IWorldAccess {
 	}
 
 	public final void playMusic(String var1, float var2, float var3, float var4, float var5) {
-		this.mc.sndManager.playRandomMusicIfReady(var2, var3, var4);
+		this.mc.sndManager.playRandomMusicIfReady();
 	}
 
 	public final void obtainEntitySkin(Entity var1) {

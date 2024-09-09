@@ -91,10 +91,21 @@ public final class BlockFurnace extends BlockContainer {
 		}
 	}
 
-	public final int getBlockTextureFromSide(int var1) {
-		return var1 == 1 ? Block.stone.blockID : (var1 == 0 ? Block.stone.blockID : (var1 == 3 ? this.blockIndexInTexture - 1 : this.blockIndexInTexture));
+	public final int getBlockTextureFromSide(int side) {
+	    // Check if the side is the top (side == 1) or bottom (side == 0)
+	    if (side == 1) {
+	        // Top should use the stone texture
+	        return Block.stone.blockIndexInTexture;
+	    } else if (side == 0) {
+	        // Bottom should also use the stone texture
+	        return Block.stone.blockIndexInTexture;
+	    } else {
+	        // The front face of the furnace should have a special texture
+	        // Side 3 is usually the front, check if it's active or not to use the correct texture
+	        return (side == 3 ? (this.isActive ? this.blockIndexInTexture + 16 : this.blockIndexInTexture - 1) : this.blockIndexInTexture);
+	    }
 	}
-
+	
 	public final boolean blockActivated(World var1, int var2, int var3, int var4, EntityPlayer var5) {
 		TileEntityFurnace var6 = (TileEntityFurnace)var1.getBlockTileEntity(var2, var3, var4);
 		var5.displayGUIFurnace(var6);

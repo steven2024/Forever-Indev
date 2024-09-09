@@ -10,6 +10,8 @@ import java.util.Random;
 import java.util.TreeSet;
 import net.minecraft.game.entity.Entity;
 import net.minecraft.game.entity.EntityLiving;
+import net.minecraft.game.entity.animal.EntitySheep;
+import net.minecraft.game.entity.player.EntityPlayer;
 import net.minecraft.game.level.block.Block;
 import net.minecraft.game.level.block.BlockContainer;
 import net.minecraft.game.level.block.tileentity.TileEntity;
@@ -42,7 +44,7 @@ public final class World {
 	private List list = new ArrayList();
 	int[] heightMap;
 	public Random random = new Random();
-	private Random rand = new Random();
+	public Random rand = new Random();
 	private int randId = this.random.nextInt();
 	public EntityMap entityMap;
 	public int waterLevel;
@@ -64,6 +66,7 @@ public final class World {
 	private int[] coords = new int[1048576];
 	private int[] floodedBlocks = new int[1048576];
 	public int difficultySetting = 2;
+	public static int levelType;
 
 	public final void load() {
 		if(this.blocks == null) {
@@ -1076,6 +1079,8 @@ public final class World {
 		}
 
 	}
+	
+	
 
 	public final void releaseEntitySkin(Entity var1) {
 		this.entityMap.remove(var1);
@@ -1593,7 +1598,14 @@ public final class World {
 	}
 
 	public final String debugSkylightUpdates() {
-		return "" + this.tickList.size() + ". L: " + this.lightUpdates.debugLightUpdates();
+	    // Get the number of pending ticks
+	    int pendingTicks = this.tickList.size();
+	    
+	    // Get the light updates debug information
+	    String lightUpdateDebugInfo = this.lightUpdates.debugLightUpdates();
+	    
+	    // Format the debug string to be more descriptive
+	    return "Pending Ticks: " + pendingTicks + ". Light Updates: " + lightUpdateDebugInfo;
 	}
 
 	public final void setLevel() {
@@ -1611,6 +1623,43 @@ public final class World {
 		this.lightUpdates.updateDaylightCycle(var1);
 	}
 
+	public Entity getEntityLookingAt(EntityPlayer player, double range) {
+	    // Get player's position and look vector
+	    Vec3D playerPos = new Vec3D(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+	    Vec3D lookVec = player.getLookVec();  // Updated to use getLookVec()
+	    Vec3D lookEnd = playerPos.addVector((float)(lookVec.xCoord * range), (float)(lookVec.yCoord * range), (float)(lookVec.zCoord * range));  // Cast to float
+
+	    // Search for entities within a certain range
+	    Entity pointedEntity = null;
+	    List<Entity> entities = player.worldObj.getEntitiesWithinAABBExcludingEntity(
+	        player, 
+	        player.boundingBox.addCoord((float)(lookVec.xCoord * range), (float)(lookVec.yCoord * range), (float)(lookVec.zCoord * range)).expand(1.0F, 1.0F, 1.0F)  // Cast to float
+	    );
+
+	    double closestDistance = range;
+	    for (Entity entity : entities) {
+	        if (entity.canBeCollidedWith()) {
+	            // Expand entity's bounding box to check for collision
+	            float collisionBorderSize = 0.3F;  // Adjust as necessary
+	            AxisAlignedBB expandedBox = entity.boundingBox.expand(collisionBorderSize, collisionBorderSize, collisionBorderSize);
+
+	            // Check if the look vector intersects with the entity's bounding box
+	            MovingObjectPosition hitResult = expandedBox.calculateIntercept(playerPos, lookEnd);
+
+	            if (hitResult != null) {
+	                // Calculate the distance to the entity
+	                float distanceToEntity = playerPos.distance(hitResult.hitVec);
+	                if (distanceToEntity < closestDistance) {
+	                    closestDistance = distanceToEntity;
+	                    pointedEntity = entity;
+	                }
+	            }
+	        }
+	    }
+	    return pointedEntity;
+	}
+
+	
 	public final boolean canBlockSeeTheSky(int var1, int var2, int var3) {
 		if(this.heightMap[var1 + var3 * this.width] <= var2) {
 			return true;
@@ -1638,5 +1687,24 @@ public final class World {
 
 	public boolean containsPos(int x, int y, int z) {
 		return x > 0 && y > 0 && z > 0 && x < this.width - 1 && y < this.height - 1 && z < this.length - 1;
+	}
+	public int getHeight() {
+	    return this.height;
+	}
+
+	public void markBlockForUpdate(int x, int y, int z) {
+	    // Ensure the block is within bounds of the world
+	    if (!containsPos(x, y, z)) {
+	        return;
+	    }
+
+	    // Loop through all registered world accesses (renderers, observers, etc.)
+	    for (int i = 0; i < this.worldAccesses.size(); i++) {
+	        // Notify each world access that this block needs to be updated
+	        ((IWorldAccess) this.worldAccesses.get(i)).markBlockAndNeighborsNeedsUpdate(x, y, z);
+	    }
+
+	    // If necessary, update lighting for the block
+	    this.lightUpdates.updateBlockLight(x, y, z, x + 1, y + 1, z + 1);
 	}
 }

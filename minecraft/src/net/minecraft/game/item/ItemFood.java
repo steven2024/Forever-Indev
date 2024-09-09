@@ -14,9 +14,12 @@ public class ItemFood extends Item {
 		this.maxStackSize = 1;
 	}
 
-	public ItemStack onItemRightClick(ItemStack item, World world, EntityPlayer player) {
-		item.stackSize--;
-		player.heal(this.healAmount);
+	public ItemStack onItemRightClick(ItemStack item, World world, EntityPlayer player) {	
+		// Check if player's health is less than 20
+		if (player.getHealth() < 20) {
+			item.stackSize--;
+			player.heal(this.healAmount);
+		}
 		
 		return item;
 	}

@@ -110,71 +110,104 @@ public final class TileEntityFurnace extends TileEntity implements IInventory {
 	}
 
 	public final void updateEntity() {
-		boolean var1 = this.furnaceBurnTime > 0;
-		if(this.furnaceBurnTime > 0) {
-			--this.furnaceBurnTime;
-		}
+	    boolean wasBurning = this.furnaceBurnTime > 0;
+	    
+	    // Decrease burn time if furnace is burning
+	    if (this.furnaceBurnTime > 0) {
+	        --this.furnaceBurnTime;
+	    }
 
-		if(this.furnaceBurnTime == 0 && this.canSmelt()) {
-			this.currentItemBurnTime = this.furnaceBurnTime = getItemBurnTime(this.furnaceItemStacks[1]);
-			if(this.furnaceBurnTime > 0 && this.furnaceItemStacks[1] != null) {
-				--this.furnaceItemStacks[1].stackSize;
-				if(this.furnaceItemStacks[1].stackSize == 0) {
-					this.furnaceItemStacks[1] = null;
-				}
-			}
-		}
+	    // Check if the furnace can start burning and if smelting is possible
+	    if (this.furnaceBurnTime == 0 && this.canSmelt()) {
+	        this.currentItemBurnTime = this.furnaceBurnTime = getItemBurnTime(this.furnaceItemStacks[1]);
+	        
+	        if (this.furnaceBurnTime > 0 && this.furnaceItemStacks[1] != null) {
+	            --this.furnaceItemStacks[1].stackSize;
+	            if (this.furnaceItemStacks[1].stackSize == 0) {
+	                this.furnaceItemStacks[1] = null;
+	            }
+	        }
+	    }
 
-		if(this.isBurning() && this.canSmelt()) {
-			++this.furnaceCookTime;
-			if(this.furnaceCookTime == 200) {
-				this.furnaceCookTime = 0;
-				if(this.canSmelt()) {
-					int var3 = smeltItem(this.furnaceItemStacks[0].getItem().shiftedIndex);
-					if(this.furnaceItemStacks[2] == null) {
-						this.furnaceItemStacks[2] = new ItemStack(var3, 1);
-					} else if(this.furnaceItemStacks[2].itemID == var3) {
-						++this.furnaceItemStacks[2].stackSize;
-					}
+	    // Smelt the item if the furnace is burning and can smelt
+	    if (this.isBurning() && this.canSmelt()) {
+	        ++this.furnaceCookTime;
+	        
+	        if (this.furnaceCookTime == 200) { // Complete smelting process
+	            this.furnaceCookTime = 0;
+	            this.smeltItem();
+	        }
+	    } else {
+	        // Reset cook time if not smelting
+	        this.furnaceCookTime = 0;
+	    }
 
-					--this.furnaceItemStacks[0].stackSize;
-					if(this.furnaceItemStacks[0].stackSize <= 0) {
-						this.furnaceItemStacks[0] = null;
-					}
-				}
-			}
-		} else {
-			this.furnaceCookTime = 0;
-		}
-
-		if(var1 != this.furnaceBurnTime > 0) {
-			boolean var10000 = this.furnaceBurnTime > 0;
-			int var5 = this.zCoord;
-			int var4 = this.yCoord;
-			int var8 = this.xCoord;
-			World var9 = this.worldObj;
-			boolean var2 = var10000;
-			byte var6 = var9.getBlockMetadata(var8, var4, var5);
-			TileEntity var7 = var9.getBlockTileEntity(var8, var4, var5);
-			if(var2) {
-				var9.setBlockWithNotify(var8, var4, var5, Block.stoneOvenActive.blockID);
-			} else {
-				var9.setBlockWithNotify(var8, var4, var5, Block.stoneOvenIdle.blockID);
-			}
-
-			var9.setBlockMetadata(var8, var4, var5, var6);
-			var9.setBlockTileEntity(var8, var4, var5, var7);
-		}
-
+	    // Update the block state if burning status has changed
+	    if (wasBurning != (this.furnaceBurnTime > 0)) {
+	        this.updateFurnaceBlockState(this.furnaceBurnTime > 0);
+	    }
 	}
 
+	private void updateFurnaceBlockState(boolean isBurning) {
+	    int x = this.xCoord;
+	    int y = this.yCoord;
+	    int z = this.zCoord;
+	    World world = this.worldObj;
+
+	    // Get the current block metadata and block tile entity
+	    int currentMeta = world.getBlockMetadata(x, y, z);
+	    TileEntity tileEntity = world.getBlockTileEntity(x, y, z);
+
+	    // Update the block to active or idle based on the burning status
+	    if (isBurning) {
+	        world.setBlockWithNotify(x, y, z, Block.stoneOvenActive.blockID);
+	    } else {
+	        world.setBlockWithNotify(x, y, z, Block.stoneOvenIdle.blockID);
+	    }
+
+	    // Restore the metadata and tile entity
+	    world.setBlockMetadata(x, y, z, currentMeta);
+	    world.setBlockTileEntity(x, y, z, tileEntity);
+	}
+
+	private void smeltItem() {
+	    if (this.canSmelt()) {
+	        int smeltedItemID = smeltItem(this.furnaceItemStacks[0].getItem().shiftedIndex);
+	        
+	        // If output slot is empty, add the smelted item, otherwise stack it
+	        if (this.furnaceItemStacks[2] == null) {
+	            this.furnaceItemStacks[2] = new ItemStack(smeltedItemID, 1);
+	        } else if (this.furnaceItemStacks[2].itemID == smeltedItemID) {
+	            ++this.furnaceItemStacks[2].stackSize;
+	        }
+
+	        // Decrease input stack size
+	        --this.furnaceItemStacks[0].stackSize;
+	        
+	        if (this.furnaceItemStacks[0].stackSize <= 0) {
+	            this.furnaceItemStacks[0] = null; // Remove input item when stack is empty
+	        }
+	    }
+	}
+
+
 	private boolean canSmelt() {
-		if(this.furnaceItemStacks[0] == null) {
-			return false;
-		} else {
-			int var1 = smeltItem(this.furnaceItemStacks[0].getItem().shiftedIndex);
-			return var1 < 0 ? false : (this.furnaceItemStacks[2] == null ? true : (this.furnaceItemStacks[2].itemID != var1 ? false : (this.furnaceItemStacks[2].stackSize < 64 ? true : this.furnaceItemStacks[2].stackSize < Item.itemsList[var1].getItemStackLimit())));
-		}
+	    if (this.furnaceItemStacks[0] == null) {
+	        return false; // No item in the input slot
+	    } else {
+	        int smeltedItemID = smeltItem(this.furnaceItemStacks[0].getItem().shiftedIndex);
+	        if (smeltedItemID < 0) {
+	            return false; // Invalid item to smelt
+	        }
+	        if (this.furnaceItemStacks[2] == null) {
+	            return true; // Output slot is empty, can smelt
+	        }
+	        if (this.furnaceItemStacks[2].itemID != smeltedItemID) {
+	            return false; // Different item in the output slot, can't stack
+	        }
+	        int resultStackSize = this.furnaceItemStacks[2].stackSize + 1; // Smelted item will stack by 1
+	        return resultStackSize <= this.getInventoryStackLimit() && resultStackSize <= Item.itemsList[this.furnaceItemStacks[2].itemID].getItemStackLimit();
+	    }
 	}
 
 	private static int smeltItem(int var0) {

@@ -1,8 +1,19 @@
 package net.minecraft.client.sound;
 
 import java.io.File;
+import java.io.FilenameFilter;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Mixer;
+
 import net.minecraft.client.GameSettings;
+import net.minecraft.client.Minecraft;
 import net.minecraft.game.entity.EntityLiving;
+import net.minecraft.game.level.World;
 import paulscode.sound.SoundSystem;
 import paulscode.sound.SoundSystemConfig;
 import paulscode.sound.codecs.CodecJOrbis;
@@ -11,137 +22,224 @@ import paulscode.sound.libraries.LibraryLWJGLOpenAL;
 import util.MathHelper;
 
 public final class SoundManager {
-	private SoundSystem sndSystem;
-	private SoundPool soundPoolSounds = new SoundPool();
-	private SoundPool soundPoolMusic = new SoundPool();
-	private int latestSoundID = 0;
-	private GameSettings options;
-	private boolean loaded = false;
+    private SoundSystem sndSystem;
+    private SoundPool soundPoolSounds = new SoundPool();
+    private SoundPool soundPoolMusic = new SoundPool();
+    private int latestSoundID = 0;
+    private GameSettings options;
+    private boolean loaded = false;
+    private Mixer.Info currentMixerInfo;
+    private Minecraft mc;
 
-	public final void loadSoundSettings(GameSettings var1) {
-		this.options = var1;
-		if(!this.loaded && (var1.sound || var1.music)) {
-			this.tryToSetLibraryAndCodecs();
-		}
+    public SoundManager(Minecraft minecraft) {
+        this.currentMixerInfo = AudioSystem.getMixer(null).getMixerInfo();
+        this.mc = minecraft;
+    }
 
-	}
+    public final void loadSoundSettings(GameSettings settings) {
+        this.options = settings;
+        if (!this.loaded && (settings.sound || settings.music)) {
+            this.tryToSetLibraryAndCodecs();
+        }
+    }
 
-	private void tryToSetLibraryAndCodecs() {
-		try {
-			boolean var1 = this.options.sound;
-			boolean var2 = this.options.music;
-			this.options.sound = false;
-			this.options.music = false;
-			this.options.saveOptions();
-			SoundSystemConfig.addLibrary(LibraryLWJGLOpenAL.class);
-			SoundSystemConfig.setCodec("ogg", CodecJOrbis.class);
-			SoundSystemConfig.setCodec("wav", CodecWav.class);
-			this.sndSystem = new SoundSystem();
-			this.options.sound = var1;
-			this.options.music = var2;
-			this.options.saveOptions();
-		} catch (Throwable var3) {
-			System.err.println("error linking with the LibraryJavaSound plug-in");
-		}
+    private void tryToSetLibraryAndCodecs() {
+        try {
+            if (this.sndSystem != null) {
+                this.sndSystem.cleanup();
+            }
 
-		this.loaded = true;
-	}
+            SoundSystemConfig.addLibrary(LibraryLWJGLOpenAL.class);
+            SoundSystemConfig.setCodec("ogg", CodecJOrbis.class);
+            SoundSystemConfig.setCodec("wav", CodecWav.class);
+            this.sndSystem = new SoundSystem();
+            System.out.println("Sound system initialized with OpenAL and codecs.");
+        } catch (Throwable e) {
+            System.err.println("Error linking with the LibraryJavaSound plug-in");
+            e.printStackTrace();
+        }
 
-	public final void onSoundOptionsChanged() {
-		if(!this.loaded && (this.options.sound || this.options.music)) {
-			this.tryToSetLibraryAndCodecs();
-		}
+        this.loaded = true;
+    }
+    
+    public void reloadSoundSystem() {
+        if (this.loaded) {
+            this.sndSystem.cleanup();
+            this.loaded = false;
+        }
+        this.tryToSetLibraryAndCodecs();
+    }
 
-		if(!this.options.music) {
-			this.sndSystem.stop("BgMusic");
-		}
+    public void checkForAudioDeviceChange() {
+        Mixer.Info newMixerInfo = AudioSystem.getMixer(null).getMixerInfo();
+        if (!newMixerInfo.equals(currentMixerInfo)) {
+            System.out.println("Audio device change detected. Restarting sound system...");
+            this.reloadSoundSystem();
+            this.currentMixerInfo = newMixerInfo;
+        }
+    }
 
-	}
+    public final void closeMinecraft() {
+        if (this.loaded) {
+            this.sndSystem.cleanup();
+        }
+    }
 
-	public final void closeMinecraft() {
-		if(this.loaded) {
-			this.sndSystem.cleanup();
-		}
+    public final void addSound(String name, File file) {
+        this.soundPoolSounds.addSound(name, file);
+    }
 
-	}
+    public final void addMusic(String name, File file) {
+        this.soundPoolMusic.addSound(name, file);
+    }
 
-	public final void addSound(String var1, File var2) {
-		this.soundPoolSounds.addSound(var1, var2);
-	}
+    private String currentMusicCategory = ""; // Variable to track the current music category (e.g., "hell" or "calm")
 
-	public final void addMusic(String var1, File var2) {
-		this.soundPoolMusic.addSound(var1, var2);
-	}
+    public void stopBackgroundMusic() {
+        if (this.sndSystem != null && this.sndSystem.playing("BgMusic")) {
+            this.sndSystem.stop("BgMusic");
+            currentMusicCategory = ""; // Reset the current category when stopping music
+        }
+    }
 
-	public final void playRandomMusicIfReady(float var1, float var2, float var3) {
-		if(this.loaded && this.options.music) {
-			if(!this.sndSystem.playing("BgMusic")) {
-				SoundPoolEntry var4 = this.soundPoolMusic.getRandomSoundFromSoundPool("calm");
-				this.sndSystem.newStreamingSource(true, "BgMusic", var4.soundUrl, var4.soundName, false, var1, var2, var3, 2, 32.0F);
-				this.sndSystem.play("BgMusic");
-			}
+    public void playRandomMusicIfReady() {
+        if (this.loaded && this.options.music) {
+            int worldLevelType = World.levelType;
+            String soundPrefix;
 
-		}
-	}
+            // Determine the music category based on the world level type
+            switch (worldLevelType) {
+                case 1: // Hell music type
+                    soundPrefix = "hell";
+                    break;
+                case 4: // Winter music type
+                    soundPrefix = "winter";
+                    break;
+                default: // Default category for other types
+                    soundPrefix = "calm";
+                    break;
+            }
 
-	public final void setListener(EntityLiving var1, float var2) {
-		if(this.loaded && this.options.sound) {
-			if(var1 != null) {
-				float var3 = var1.prevRotationPitch + (var1.rotationPitch - var1.prevRotationPitch) * var2;
-				float var4 = var1.prevRotationYaw + (var1.rotationYaw - var1.prevRotationYaw) * var2;
-				float var5 = var1.prevPosX + (var1.posX - var1.prevPosX) * var2;
-				float var6 = var1.prevPosY + (var1.posY - var1.prevPosY) * var2;
-				float var10 = var1.prevPosZ + (var1.posZ - var1.prevPosZ) * var2;
-				var2 = MathHelper.cos(-var4 * ((float)Math.PI / 180.0F) - (float)Math.PI);
-				var4 = MathHelper.sin(-var4 * ((float)Math.PI / 180.0F) - (float)Math.PI);
-				float var7 = MathHelper.cos(-var3 * ((float)Math.PI / 180.0F));
-				var3 = MathHelper.sin(-var3 * ((float)Math.PI / 180.0F));
-				float var8 = -var4 * var7;
-				float var9 = -var2 * var7;
-				var4 = -var4 * var3;
-				var2 = -var2 * var3;
-				this.sndSystem.setListenerPosition(var5, var6, var10);
-				this.sndSystem.setListenerOrientation(var8, var3, var9, var4, var7, var2);
-			}
-		}
-	}
+            // If the correct category is already playing, do nothing
+            if (soundPrefix.equals(currentMusicCategory) && this.sndSystem.playing("BgMusic")) {
+                return;
+            }
 
-	public final void playSound(String var1, float var2, float var3, float var4, float var5, float var6) {
-		if(this.loaded && this.options.sound) {
-			SoundPoolEntry var9 = this.soundPoolSounds.getRandomSoundFromSoundPool(var1);
-			if(var9 != null && var5 > 0.0F) {
-				this.latestSoundID = (this.latestSoundID + 1) % 256;
-				String var7 = "sound_" + this.latestSoundID;
-				float var8 = 16.0F;
-				if(var5 > 1.0F) {
-					var8 = 16.0F * var5;
-				}
+            stopBackgroundMusic(); // Stop the current music before starting a new one
 
-				this.sndSystem.newSource(var5 > 1.0F, var7, var9.soundUrl, var9.soundName, false, var2, var3, var4, 2, var8);
-				this.sndSystem.setPitch(var7, var6);
-				if(var5 > 1.0F) {
-					var5 = 1.0F;
-				}
+            System.out.println("Selected sound prefix: " + soundPrefix);
 
-				this.sndSystem.setVolume(var7, var5);
-				this.sndSystem.play(var7);
-			}
+            try {
+                List<File> files = listFilesByPrefix(soundPrefix);
+                if (files.isEmpty()) {
+                    System.out.println("No sounds found for prefix: " + soundPrefix);
+                    return;
+                }
 
-		}
-	}
+                // Pick a random sound file from the list
+                File soundFile = files.get(new Random().nextInt(files.size()));
+                SoundPoolEntry entry = new SoundPoolEntry(soundFile.getName(), soundFile.toURI().toURL());
 
-	public final void playSoundFX(String var1, float var2, float var3) {
-		if(this.loaded && this.options.sound) {
-			SoundPoolEntry var4 = this.soundPoolSounds.getRandomSoundFromSoundPool(var1);
-			if(var4 != null) {
-				this.latestSoundID = (this.latestSoundID + 1) % 256;
-				String var5 = "sound_" + this.latestSoundID;
-				this.sndSystem.newSource(false, var5, var4.soundUrl, var4.soundName, false, 0.0F, 0.0F, 0.0F, 0, 0.0F);
-				this.sndSystem.setPitch(var5, 1.0F);
-				this.sndSystem.setVolume(var5, 0.25F);
-				this.sndSystem.play(var5);
-			}
+                if (entry != null) {
+                    System.out.println("Playing sound: " + entry.soundName);
+                    this.sndSystem.newStreamingSource(true, "BgMusic", entry.soundUrl, entry.soundName, false, 0.0F, 0.0F, 0.0F, 0, 0.0F);
+                    this.sndSystem.setVolume("BgMusic", 1.0F);
+                    this.sndSystem.play("BgMusic");
 
-		}
-	}
+                    // Update the current category to the one just started
+                    currentMusicCategory = soundPrefix;
+                } else {
+                    System.out.println("No sound entry created.");
+                }
+            } catch (MalformedURLException e) {
+                System.err.println("Error creating URL for sound file.");
+                e.printStackTrace();
+            }
+        } else {
+            stopBackgroundMusic(); // Stop music if conditions aren't met
+        }
+    }
+
+    private List<File> listFilesByPrefix(String prefix) {
+        File soundDir = new File(mc.mcDataDir, "resources/music");
+        if (!soundDir.exists() || !soundDir.isDirectory()) {
+            System.err.println("Sound directory does not exist or is not a directory.");
+            return new ArrayList<>();
+        }
+
+        FilenameFilter filter = new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.startsWith(prefix) && name.endsWith(".ogg");
+            }
+        };
+
+        File[] matchingFiles = soundDir.listFiles(filter);
+        List<File> files = new ArrayList<>();
+        if (matchingFiles != null) {
+            for (File file : matchingFiles) {
+                files.add(file);
+            }
+        }
+
+        return files;
+    }
+
+    public final void setListener(EntityLiving entity, float partialTicks) {
+        if (this.loaded && this.options.sound) {
+            if (entity != null) {
+                float pitch = entity.prevRotationPitch + (entity.rotationPitch - entity.prevRotationPitch) * partialTicks;
+                float yaw = entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * partialTicks;
+                float posX = entity.prevPosX + (entity.posX - entity.prevPosX) * partialTicks;
+                float posY = entity.prevPosY + (entity.posY - entity.prevPosY) * partialTicks;
+                float posZ = entity.prevPosZ + (entity.posZ - entity.prevPosZ) * partialTicks;
+                float x = MathHelper.cos(-yaw * ((float)Math.PI / 180.0F) - (float)Math.PI);
+                float y = MathHelper.sin(-yaw * ((float)Math.PI / 180.0F) - (float)Math.PI);
+                float z = MathHelper.cos(-pitch * ((float)Math.PI / 180.0F));
+                pitch = MathHelper.sin(-pitch * ((float)Math.PI / 180.0F));
+                float orientationX = -y * z;
+                float orientationY = -x * z;
+                y = -y * pitch;
+                x = -x * pitch;
+                this.sndSystem.setListenerPosition(posX, posY, posZ);
+                this.sndSystem.setListenerOrientation(orientationX, pitch, orientationY, y, z, x);
+            }
+        }
+    }
+
+    public final void playSound(String name, float x, float y, float z, float volume, float pitch) {
+        if (this.loaded && this.options.sound) {
+            SoundPoolEntry entry = this.soundPoolSounds.getRandomSoundFromSoundPool(name);
+            if (entry != null && volume > 0.0F) {
+                this.latestSoundID = (this.latestSoundID + 1) % 256;
+                String soundID = "sound_" + this.latestSoundID;
+                float maxDistance = 16.0F;
+                if (volume > 1.0F) {
+                    maxDistance = 16.0F * volume;
+                }
+
+                this.sndSystem.newSource(volume > 1.0F, soundID, entry.soundUrl, entry.soundName, false, x, y, z, 2, maxDistance);
+                this.sndSystem.setPitch(soundID, pitch);
+                if (volume > 1.0F) {
+                    volume = 1.0F;
+                }
+
+                this.sndSystem.setVolume(soundID, volume);
+                this.sndSystem.play(soundID);
+            }
+        }
+    }
+
+    public final void playSoundFX(String name, float x, float y) {
+        if (this.loaded && this.options.sound) {
+            SoundPoolEntry entry = this.soundPoolSounds.getRandomSoundFromSoundPool(name);
+            if (entry != null) {
+                this.latestSoundID = (this.latestSoundID + 1) % 256;
+                String soundID = "sound_" + this.latestSoundID;
+                this.sndSystem.newSource(false, soundID, entry.soundUrl, entry.soundName, false, 0.0F, 0.0F, 0.0F, 0, 0.0F);
+                this.sndSystem.setPitch(soundID, 1.0F);
+                this.sndSystem.setVolume(soundID, 0.25F);
+                this.sndSystem.play(soundID);
+            }
+        }
+    }
 }
