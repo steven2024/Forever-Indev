@@ -28,8 +28,13 @@ public final class SoundManager {
     private int latestSoundID = 0;
     private GameSettings options;
     private boolean loaded = false;
+    private boolean deathMusicPlaying = false; // Track if death music is playing
+    private boolean transitioningToDeath = false; // Track if we're transitioning to death music
     private Mixer.Info currentMixerInfo;
     private Minecraft mc;
+    private String currentMusicCategory = ""; // Track the current music category
+    private boolean isFadingOut = false; // Flag for fade-out
+    private boolean isFadingIn = false;  // Flag for fade-in
 
     public SoundManager(Minecraft minecraft) {
         this.currentMixerInfo = AudioSystem.getMixer(null).getMixerInfo();
@@ -61,7 +66,7 @@ public final class SoundManager {
 
         this.loaded = true;
     }
-    
+
     public void reloadSoundSystem() {
         if (this.loaded) {
             this.sndSystem.cleanup();
@@ -93,8 +98,7 @@ public final class SoundManager {
         this.soundPoolMusic.addSound(name, file);
     }
 
-    private String currentMusicCategory = ""; // Variable to track the current music category (e.g., "hell" or "calm")
-
+    // Stop background music
     public void stopBackgroundMusic() {
         if (this.sndSystem != null && this.sndSystem.playing("BgMusic")) {
             this.sndSystem.stop("BgMusic");
@@ -102,64 +106,206 @@ public final class SoundManager {
         }
     }
 
-    public void playRandomMusicIfReady() {
-        if (this.loaded && this.options.music) {
-            int worldLevelType = World.levelType;
-            String soundPrefix;
+    // Fade out the current music before switching to death music
+    public void fadeOutToDeathMusic() {
+        if (this.sndSystem != null && this.sndSystem.playing("BgMusic")) {
+            new Thread(() -> {
+                float volume = 1.0F;
 
-            // Determine the music category based on the world level type
-            switch (worldLevelType) {
-                case 1: // Hell music type
-                    soundPrefix = "hell";
-                    break;
-                case 4: // Winter music type
-                    soundPrefix = "winter";
-                    break;
-                default: // Default category for other types
-                    soundPrefix = "calm";
-                    break;
-            }
-
-            // If the correct category is already playing, do nothing
-            if (soundPrefix.equals(currentMusicCategory) && this.sndSystem.playing("BgMusic")) {
-                return;
-            }
-
-            stopBackgroundMusic(); // Stop the current music before starting a new one
-
-            System.out.println("Selected sound prefix: " + soundPrefix);
-
-            try {
-                List<File> files = listFilesByPrefix(soundPrefix);
-                if (files.isEmpty()) {
-                    System.out.println("No sounds found for prefix: " + soundPrefix);
-                    return;
+                // Gradually reduce the volume over 2 seconds (2000ms)
+                for (int i = 0; i < 20; i++) {
+                    volume -= 0.05F; // Reduce volume in steps
+                    this.sndSystem.setVolume("BgMusic", volume);
+                    try {
+                        Thread.sleep(100); // Pause for 100ms between steps
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
 
-                // Pick a random sound file from the list
-                File soundFile = files.get(new Random().nextInt(files.size()));
-                SoundPoolEntry entry = new SoundPoolEntry(soundFile.getName(), soundFile.toURI().toURL());
+                // Stop the music once volume is completely down
+                this.sndSystem.stop("BgMusic");
+                currentMusicCategory = ""; // Reset the current category
 
-                if (entry != null) {
-                    System.out.println("Playing sound: " + entry.soundName);
-                    this.sndSystem.newStreamingSource(true, "BgMusic", entry.soundUrl, entry.soundName, false, 0.0F, 0.0F, 0.0F, 0, 0.0F);
-                    this.sndSystem.setVolume("BgMusic", 1.0F);
-                    this.sndSystem.play("BgMusic");
-
-                    // Update the current category to the one just started
-                    currentMusicCategory = soundPrefix;
-                } else {
-                    System.out.println("No sound entry created.");
-                }
-            } catch (MalformedURLException e) {
-                System.err.println("Error creating URL for sound file.");
-                e.printStackTrace();
-            }
+                // Play death music after fade-out
+                playDeathMusic();
+            }).start();
         } else {
-            stopBackgroundMusic(); // Stop music if conditions aren't met
+            // If no background music is playing, directly start death music
+            playDeathMusic();
         }
     }
 
+    // Play death music
+    public void playDeathMusic() {
+        try {
+            File deathFile = new File(mc.mcDataDir, "resources/music/death.ogg");
+            if (deathFile.exists()) {
+                SoundPoolEntry deathEntry = new SoundPoolEntry(deathFile.getName(), deathFile.toURI().toURL());
+                this.sndSystem.newSource(false, "DeathMusic", deathEntry.soundUrl, deathEntry.soundName, true, 0.0F, 0.0F, 0.0F, 0, 0.0F); // Loop the death music
+                this.sndSystem.setVolume("DeathMusic", 1.0F);
+                this.sndSystem.play("DeathMusic");
+                deathMusicPlaying = true;
+            } else {
+                System.err.println("Death music file not found.");
+            }
+        } catch (MalformedURLException e) {
+            System.err.println("Error creating URL for death music.");
+            e.printStackTrace();
+        }
+    }
+
+    // Helper method to fade out current music before transitioning to new music
+    private void fadeOutCurrentMusic(Runnable afterFade) {
+        if (this.sndSystem != null && this.sndSystem.playing("BgMusic") && !isFadingOut) {
+            isFadingOut = true; // Mark that we are fading out
+
+            new Thread(() -> {
+                float volume = 1.0F;
+
+                // Gradually reduce the volume over 2 seconds (2000ms)
+                for (int i = 0; i < 20; i++) {
+                    volume -= 0.05F; // Reduce volume in steps
+                    this.sndSystem.setVolume("BgMusic", volume);
+                    try {
+                        Thread.sleep(100); // Pause for 100ms between steps
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // Stop the music once volume is completely down
+                this.sndSystem.stop("BgMusic");
+                currentMusicCategory = ""; // Reset the current category
+
+                // Execute the code to play the new music after fade-out
+                afterFade.run();
+                isFadingOut = false; // Reset the fade-out flag once complete
+            }).start();
+        } else {
+            // If no background music is playing, directly play the new music
+            afterFade.run();
+        }
+    }
+
+    // Helper method to fade in new music after it's started
+    private void fadeInNewMusic() {
+        if (!isFadingIn) {
+            isFadingIn = true; // Mark that we are fading in
+
+            new Thread(() -> {
+                float volume = 0.0F;
+
+                // Gradually increase the volume over 2 seconds (2000ms)
+                for (int i = 0; i < 20; i++) {
+                    volume += 0.05F; // Increase volume in steps
+                    this.sndSystem.setVolume("BgMusic", volume);
+                    try {
+                        Thread.sleep(100); // Pause for 100ms between steps
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                isFadingIn = false; // Reset the fade-in flag once complete
+            }).start();
+        }
+    }
+
+    public void playRandomMusicIfReady() {
+        if (isFadingOut || isFadingIn || !this.loaded || !this.options.music) {
+            return; // Exit if music is fading or not ready
+        }
+
+        String soundPrefix;
+
+        // Check if player is dead and handle death music
+        if (mc.thePlayer != null && mc.thePlayer.health <= 0) {
+            if (deathMusicPlaying) {
+                return; // Already playing death music, do nothing
+            }
+
+            if (!transitioningToDeath) {
+                transitioningToDeath = true;
+                fadeOutToDeathMusic(); // Fade out current music and play death music
+            }
+            return;
+        }
+
+        // Stop death music if player is alive
+        if (deathMusicPlaying) {
+            this.sndSystem.stop("DeathMusic");
+            deathMusicPlaying = false; // Mark that death music is no longer playing
+        }
+
+        // Determine the music category based on the world level type
+        int worldLevelTheme = World.levelTheme;
+        switch (worldLevelTheme) {
+            case 1: // Hell music type
+                soundPrefix = "hell";
+                break;
+            case 4: // Winter music type
+                soundPrefix = "winter";
+                break;
+            default: // Default category for other types
+                soundPrefix = "calm";
+                break;
+        }
+
+        // If the correct category is already playing, do nothing
+        if (soundPrefix.equals(currentMusicCategory) && this.sndSystem.playing("BgMusic")) {
+            return;
+        }
+
+        // Transition to the new music after fade-out
+        fadeOutCurrentMusic(() -> {
+            try {
+                List<File> themedFiles = listFilesByPrefix(soundPrefix);
+                List<File> pianoFiles = listPianoTracks();
+
+                if (themedFiles.isEmpty() && pianoFiles.isEmpty()) {
+                    System.out.println("No music found for both themes and piano.");
+                    return;
+                }
+
+                Random rand = new Random();
+                File selectedFile;
+                String selectedTrack = "";
+
+                // Randomly choose between piano and themed tracks
+                if (!pianoFiles.isEmpty() && rand.nextInt(4) == 0) {
+                    int pianoTrackNumber = rand.nextInt(pianoFiles.size());
+                    selectedFile = pianoFiles.get(pianoTrackNumber);
+                    selectedTrack = "piano" + (pianoTrackNumber + 1); // Show track number for piano tracks
+                } else if (!themedFiles.isEmpty()) {
+                    selectedFile = themedFiles.get(rand.nextInt(themedFiles.size()));
+                    selectedTrack = soundPrefix;
+                } else {
+                    return; // No valid tracks found
+                }
+
+                SoundPoolEntry entry = new SoundPoolEntry(selectedFile.getName(), selectedFile.toURI().toURL());
+                if (entry != null) {
+                    this.sndSystem.newStreamingSource(true, "BgMusic", entry.soundUrl, entry.soundName, false, 0.0F, 0.0F, 0.0F, 0, 0.0F);
+                    this.sndSystem.setVolume("BgMusic", 0.0F); // Start at 0 volume for fade-in
+                    this.sndSystem.play("BgMusic");
+
+                    // Print the selected track with the prefix and track number if it's piano
+                    System.out.println("Playing track: " + selectedTrack + " - " + entry.soundName);
+
+                    currentMusicCategory = soundPrefix;
+
+                    // Start fading in the new music
+                    fadeInNewMusic();
+                }
+            } catch (MalformedURLException e) {
+                System.err.println("Error creating URL for music file.");
+                e.printStackTrace();
+            }
+        });
+    }
+
+    // List files for specific music prefix (e.g., calm, hell, winter)
     private List<File> listFilesByPrefix(String prefix) {
         File soundDir = new File(mc.mcDataDir, "resources/music");
         if (!soundDir.exists() || !soundDir.isDirectory()) {
@@ -167,13 +313,28 @@ public final class SoundManager {
             return new ArrayList<>();
         }
 
-        FilenameFilter filter = new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.startsWith(prefix) && name.endsWith(".ogg");
-            }
-        };
-
+        FilenameFilter filter = (dir, name) -> name.startsWith(prefix) && name.endsWith(".ogg");
         File[] matchingFiles = soundDir.listFiles(filter);
+        List<File> files = new ArrayList<>();
+        if (matchingFiles != null) {
+            for (File file : matchingFiles) {
+                files.add(file);
+            }
+        }
+
+        return files;
+    }
+
+    // List piano tracks
+    private List<File> listPianoTracks() {
+        File pianoDir = new File(mc.mcDataDir, "resources/newmusic");
+        if (!pianoDir.exists() || !pianoDir.isDirectory()) {
+            System.err.println("Piano track directory does not exist or is not a directory.");
+            return new ArrayList<>();
+        }
+
+        FilenameFilter filter = (dir, name) -> name.startsWith("piano") && name.endsWith(".ogg");
+        File[] matchingFiles = pianoDir.listFiles(filter);
         List<File> files = new ArrayList<>();
         if (matchingFiles != null) {
             for (File file : matchingFiles) {

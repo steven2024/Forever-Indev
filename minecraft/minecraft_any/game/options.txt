@@ -5,8 +5,8 @@ bobView:true
 anaglyph3d:false
 limitFramerate:false
 difficulty:2
-showExitConfirmation:true
-music:true
+showExitConfirmation:false
+music:false
 sound:true
 username:steve2024
 skipUsernamePrompt:true

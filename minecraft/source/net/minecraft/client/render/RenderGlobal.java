@@ -723,29 +723,28 @@ public final class RenderGlobal implements IWorldAccess {
 	}
 
 	public final void spawnParticle(String var1, float var2, float var3, float var4, float var5, float var6, float var7) {
-		float var8 = this.worldObj.playerEntity.posX - var2;
-		float var9 = this.worldObj.playerEntity.posY - var3;
-		float var10 = this.worldObj.playerEntity.posZ - var4;
-		if(var8 * var8 + var9 * var9 + var10 * var10 <= 256.0F) {
-			if(var1 == "bubble") {
-				this.mc.effectRenderer.addEffect(new EntityBubbleFX(this.worldObj, var2, var3, var4, var5, var6, var7));
-			} else if(var1 == "smoke") {
-				this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4));
-			} else if(var1 == "explode") {
-				this.mc.effectRenderer.addEffect(new EntityExplodeFX(this.worldObj, var2, var3, var4, var5, var6, var7));
-			} else if(var1 == "flame") {
-				this.mc.effectRenderer.addEffect(new EntityFlameFX(this.worldObj, var2, var3, var4));
-			} else if(var1 == "lava") {
-				this.mc.effectRenderer.addEffect(new EntityLavaFX(this.worldObj, var2, var3, var4));
-			} else if(var1 == "splash") {
-				this.mc.effectRenderer.addEffect(new EntitySplashFX(this.worldObj, var2, var3, var4));
-			} else {
-				if(var1 == "largesmoke") {
-					this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4, 2.5F));
-				}
-
-			}
-		}
+	    float var8 = this.worldObj.playerEntity.posX - var2;
+	    float var9 = this.worldObj.playerEntity.posY - var3;
+	    float var10 = this.worldObj.playerEntity.posZ - var4;
+	    if (var8 * var8 + var9 * var9 + var10 * var10 <= 256.0F) {
+	        if (var1.equals("bubble")) {
+	            this.mc.effectRenderer.addEffect(new EntityBubbleFX(this.worldObj, var2, var3, var4, var5, var6, var7));
+	        } else if (var1.equals("smoke")) {
+	            this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("explode")) {
+	            this.mc.effectRenderer.addEffect(new EntityExplodeFX(this.worldObj, var2, var3, var4, var5, var6, var7));
+	        } else if (var1.equals("flame")) {
+	            this.mc.effectRenderer.addEffect(new EntityFlameFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("lava")) {
+	            this.mc.effectRenderer.addEffect(new EntityLavaFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("splash")) {
+	            this.mc.effectRenderer.addEffect(new EntitySplashFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("leaves")) {
+	            this.mc.effectRenderer.addEffect(new EntityDiggingFX(this.worldObj, var2, var3, var4, 0, 0, 0, 20)); // Pass the leaves block instance
+	        } else if (var1.equals("largesmoke")) {
+	            this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4, 2.5F));
+	        }
+	    }
 	}
 
 	public final void playMusic(String var1, float var2, float var3, float var4, float var5) {

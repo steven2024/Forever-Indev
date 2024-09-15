@@ -25,6 +25,7 @@ public class EntityLiving extends Entity {
 	private float rotationYawHead;
 	//private float prevRotationYawHead;
 	protected String texture = "/char.png";
+	protected String capetexture = null;
 	//private int scoreValue = 0;
 	public int health;
 	public int prevHealth;
@@ -66,6 +67,10 @@ public class EntityLiving extends Entity {
 
 	public final String getTexture() {
 		return this.texture;
+	}
+	
+	public final String getCapeTexture() {
+		return this.capetexture;
 	}
 
 	public final boolean canBeCollidedWith() {

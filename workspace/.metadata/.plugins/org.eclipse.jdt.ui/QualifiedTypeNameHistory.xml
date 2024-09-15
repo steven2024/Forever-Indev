@@ -8,7 +8,6 @@
 <fullyQualifiedTypeName name="java.io.FilenameFilter"/>
 <fullyQualifiedTypeName name="net.minecraft.client.sound.SoundManager"/>
 <fullyQualifiedTypeName name="net.minecraft.game.item.ItemShield"/>
-<fullyQualifiedTypeName name="com.mojang.nbt.NBTTagCompound"/>
 <fullyQualifiedTypeName name="java.io.FileReader"/>
 <fullyQualifiedTypeName name="java.util.Arrays"/>
 <fullyQualifiedTypeName name="java.util.List"/>
@@ -40,10 +39,8 @@
 <fullyQualifiedTypeName name="java.awt.event.WindowEvent"/>
 <fullyQualifiedTypeName name="java.awt.event.WindowAdapter"/>
 <fullyQualifiedTypeName name="javax.swing.JDialog"/>
-<fullyQualifiedTypeName name="net.minecraft.game.item.ItemStack"/>
 <fullyQualifiedTypeName name="net.minecraft.game.physics.AxisAlignedBB"/>
 <fullyQualifiedTypeName name="net.minecraft.game.level.World"/>
-<fullyQualifiedTypeName name="net.minecraft.game.item.Item"/>
 <fullyQualifiedTypeName name="net.minecraft.client.player.MovementInput"/>
 <fullyQualifiedTypeName name="net.minecraft.game.entity.player.EntityPlayer"/>
 <fullyQualifiedTypeName name="net.minecraft.client.gui.GuiIngame"/>
@@ -60,4 +57,7 @@
 <fullyQualifiedTypeName name="java.util.concurrent.Executors"/>
 <fullyQualifiedTypeName name="java.util.concurrent.TimeUnit"/>
 <fullyQualifiedTypeName name="java.lang.reflect.Field"/>
+<fullyQualifiedTypeName name="com.mojang.nbt.NBTTagCompound"/>
+<fullyQualifiedTypeName name="net.minecraft.game.item.ItemStack"/>
+<fullyQualifiedTypeName name="net.minecraft.game.item.Item"/>
 </qualifiedTypeNameHistroy>

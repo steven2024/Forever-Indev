@@ -116,7 +116,7 @@ public class Block {
 	public static final Block packedGravel;
 	public static final Block compressedDirt;
 	public static final Block clayBricks;
-	public static final Block tintedGlass;
+	// public static final Block tintedGlass;
 	public static final Block mossyCobbledStone;
 	public static final Block mossyStone;
 	public static final Block woodenPaver;
@@ -653,7 +653,7 @@ public class Block {
 		bookShelf.stepSound = soundWoodFootstep;
 		
 		// glass
-		glass = new BlockGlass("Glass", 49, 49, Material.glass).setHardness(0.3F);
+		glass = new Block("Glass", 49, 49, Material.glass).setHardness(0.3F);
 		glass.stepSound = soundGlassFootstep;
 		
 		// sponge
@@ -732,8 +732,8 @@ public class Block {
 		clayBricks = new Block("Clay Bricks", 71, 104, Material.rock).setHardness(2.0F).setResistance(10.0F);
 		clayBricks.stepSound = soundStoneFootstep;
 
-		tintedGlass = new BlockGlass("Tinted Glass", 72, 105, Material.glass).setHardness(0.5F);
-		tintedGlass.stepSound = soundGlassFootstep;
+		// tintedGlass = new Block("Tinted Glass", 72, 105, Material.glass).setHardness(0.5F);
+		// tintedGlass.stepSound = soundGlassFootstep;
 
 		mossyCobbledStone = new Block("Mossy Cobbled Stone", 73, 106, Material.rock).setHardness(2.0F).setResistance(10.0F);
 		mossyCobbledStone.stepSound = soundStoneFootstep;

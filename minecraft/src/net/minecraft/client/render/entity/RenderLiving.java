@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import net.minecraft.client.model.ModelBase;
+import net.minecraft.client.model.ModelBiped;
 import net.minecraft.game.entity.Entity;
 import net.minecraft.game.entity.EntityLiving;
 import org.lwjgl.opengl.GL11;
@@ -59,6 +60,20 @@ public class RenderLiving extends Render {
                     this.renderPassModel.render(var4, var3, var2, var7 - var5, var8, 1.0F);
                     GL11.glDisable(GL11.GL_BLEND);
                     GL11.glEnable(GL11.GL_ALPHA_TEST);
+                }
+            }
+            
+            if (this.mainModel instanceof ModelBiped) {
+                ModelBiped bipedModel = (ModelBiped) this.mainModel;
+                String skinUrl = var1.skinUrl;  // Get the skin URL
+                String capeTexture = var1.getCapeTexture();  // Get the cape texture (will be null)
+
+                // Render the cape only if skinUrl is not null
+                if (skinUrl != null) {
+                    GL11.glPushMatrix();
+                    this.loadDownloadableImageTexture(var1.capeUrl, capeTexture);  // Load the cape texture (which is null)
+                    bipedModel.bipedCape.render(1.0F);  // Render the cape from ModelBiped
+                    GL11.glPopMatrix();
                 }
             }
 

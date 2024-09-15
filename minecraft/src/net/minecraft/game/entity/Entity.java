@@ -63,6 +63,7 @@ public abstract class Entity {
 	public int air = 300;
 	private boolean isFirstUpdate = true;
 	public String skinUrl;
+	public String capeUrl;
 
 	public Entity(World var1) {
 		this.worldObj = var1;

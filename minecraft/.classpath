@@ -5,27 +5,27 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="Minecraft Client/libraries/natives"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry exported="true" kind="lib" path="libraries/org/mcphackers/launchwrapper/1.0/launchwrapper-1.0.jar" sourcepath="libraries/org/mcphackers/launchwrapper/1.0/launchwrapper-1.0-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/org/ow2/asm/asm-tree/9.2/asm-tree-9.2.jar" sourcepath="libraries/org/ow2/asm/asm-tree/9.2/asm-tree-9.2-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/org/ow2/asm/asm/9.2/asm-9.2.jar" sourcepath="libraries/org/ow2/asm/asm/9.2/asm-9.2-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/org/lwjgl/lwjgl/lwjgl/2.9.4/lwjgl-2.9.4.jar" sourcepath="libraries/org/lwjgl/lwjgl/lwjgl/2.9.4/lwjgl-2.9.4-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/org/lwjgl/lwjgl/lwjgl_util/2.9.4/lwjgl_util-2.9.4.jar" sourcepath="libraries/org/lwjgl/lwjgl/lwjgl_util/2.9.4/lwjgl_util-2.9.4-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/org/json/json/20230311/json-20230311.jar" sourcepath="libraries/org/json/json/20230311/json-20230311-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/net/java/jinput/jinput/2.0.5/jinput-2.0.5.jar" sourcepath="libraries/net/java/jinput/jinput/2.0.5/jinput-2.0.5-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/net/java/jutils/jutils/1.0.0/jutils-1.0.0.jar" sourcepath="libraries/net/java/jutils/jutils/1.0.0/jutils-1.0.0-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/com/paulscode/codecjorbis/20230120/codecjorbis-20230120.jar" sourcepath="libraries/com/paulscode/codecjorbis/20230120/codecjorbis-20230120-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/com/paulscode/codecwav/20101023/codecwav-20101023.jar" sourcepath="libraries/com/paulscode/codecwav/20101023/codecwav-20101023-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/com/paulscode/libraryjavasound/20101123/libraryjavasound-20101123.jar" sourcepath="libraries/com/paulscode/libraryjavasound/20101123/libraryjavasound-20101123.jar-sources"/>
-	<classpathentry exported="true" kind="lib" path="libraries/com/paulscode/librarylwjglopenal/20100824/librarylwjglopenal-20100824.jar" sourcepath="libraries/com/paulscode/librarylwjglopenal/20100824/librarylwjglopenal-20100824-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/com/paulscode/soundsystem/20120107/soundsystem-20120107.jar" sourcepath="libraries/com/paulscode/soundsystem/20120107/soundsystem-20120107-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="libraries/org/mcphackers/rdi/rdi/1.0/rdi-1.0.jar" sourcepath="libraries/org/mcphackers/rdi/rdi/1.0/rdi-1.0-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="jars/deobfuscated.jar" sourcepath="jars/deobfuscated-source.jar"/>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/penguin/Downloads/jna-5.14.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/penguin/Downloads/jna-jpms-5.14.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/penguin/Downloads/jna-platform-5.14.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/penguin/Downloads/jna-platform-jpms-5.14.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/penguin/Downloads/oshi-core-6.6.3.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/penguin/Downloads/slf4j-api-2.1.0-alpha1.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/asm-9.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/asm-tree-9.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/codecjorbis-20230120.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/codecwav-20101023.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/deobfuscated.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/jinput-2.0.5.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/jna-5.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/jna-jpms-5.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/jna-platform-5.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/jna-platform-jpms-5.14.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/json-20230311.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/jutils-1.0.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/launchwrapper-1.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/libraryjavasound-20101123.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/librarylwjglopenal-20100824.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/lwjgl_util-2.9.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/lwjgl-2.9.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/oshi-core-6.6.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/rdi-1.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/slf4j-api-2.1.0-alpha1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/penguin/Documents/new/Forever-Indev/libraries/soundsystem-20120107.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>

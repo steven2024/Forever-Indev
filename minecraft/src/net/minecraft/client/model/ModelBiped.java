@@ -1,5 +1,6 @@
 package net.minecraft.client.model;
 
+import org.lwjgl.opengl.GL11;
 import util.MathHelper;
 
 public class ModelBiped extends ModelBase {
@@ -10,6 +11,9 @@ public class ModelBiped extends ModelBase {
     public ModelRenderer bipedLeftArm;
     public ModelRenderer bipedRightLeg;
     public ModelRenderer bipedLeftLeg;
+    public ModelRenderer bipedCape;  // ModelRenderer for the cape
+    // Single combined chest part instead of separate left and right
+    public ModelRenderer chest;
 
     public ModelBiped() {
         this(0.0F);
@@ -43,9 +47,23 @@ public class ModelBiped extends ModelBase {
         this.bipedLeftLeg.mirror = true;
         this.bipedLeftLeg.addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4, scale);
         this.bipedLeftLeg.setRotationPoint(2.0F, 12.0F + yOffset, 0.0F);
+
+     // Combined single chest part
+        this.chest = new ModelRenderer(15, 21); // Using the starting UV mapping for the chest part
+        this.chest.addBox(-4.0F, 0.0F, -3.0F, 8, 4, 5, scale); // Larger chest part that covers both
+        this.chest.setRotationPoint(0.0F, 2.5F, -3.0F); 
+        this.chest.rotateAngleX = 45.0F;  
+        this.chest.rotateAngleY = 0.0F;
+        this.chest.rotateAngleZ = 0.0F;
+
+        // Adding the cape
+        this.bipedCape = new ModelRenderer(0, 32);
+        this.bipedCape.addBox(-5.0F, 0.0F, 0.0F, 10, 16, 1, scale); // Adjusted box dimensions
+        this.bipedCape.setRotationPoint(0.0F, 0.0F + yOffset, 2.0F);  // Positioned behind the torso
     }
 
     public final void render(float var1, float var2, float var3, float var4, float var5, float var6) {
+        // Render the player model (head, body, arms, legs)
         this.setRotationAngles(var1, var2, var3, var4, var5, var6);
         this.bipedHead.render(var6);
         this.bipedBody.render(var6);
@@ -54,6 +72,11 @@ public class ModelBiped extends ModelBase {
         this.bipedRightLeg.render(var6);
         this.bipedLeftLeg.render(var6);
         this.bipedHeadwear.render(var6);
+
+        this.bipedCape.render(var6);  // Render the cape
+
+        // Render combined chest part
+        this.chest.render(var6);
     }
 
     public void setRotationAngles(float var1, float var2, float var3, float var4, float var5, float var6) {
@@ -71,5 +94,16 @@ public class ModelBiped extends ModelBase {
         this.bipedLeftArm.rotateAngleZ -= MathHelper.cos(var3 * 0.09F) * 0.05F + 0.05F;
         this.bipedRightArm.rotateAngleX += MathHelper.sin(var3 * 0.067F) * 0.05F;
         this.bipedLeftArm.rotateAngleX -= MathHelper.sin(var3 * 0.067F) * 0.05F;
+
+        // Slower cape physics
+        float capeSwing = MathHelper.cos(var1 * 0.1665F) * 0.05F * var2; // Further reduce speed by halving the multiplier
+        float capeBackwardMotion = MathHelper.abs(MathHelper.sin(var1 * 0.1665F)) * 0.3F * var2; // Slower backward motion
+
+        this.bipedCape.rotateAngleX = 0.2F + capeBackwardMotion;  // Increased backward tilt
+        this.bipedCape.rotateAngleZ = 0.03F * MathHelper.cos(var1 * 0.1F);  // Reduced speed of side-to-side motion
+
+        // Adjust the cape's angle based on body rotation
+        this.bipedCape.rotateAngleX += this.bipedBody.rotateAngleX;
+        this.bipedCape.rotateAngleY = this.bipedBody.rotateAngleY;
     }
 }

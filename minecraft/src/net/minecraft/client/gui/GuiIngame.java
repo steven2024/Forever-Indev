@@ -477,35 +477,40 @@ public final class GuiIngame extends Gui {
             }
 
             String lookingPosition = String.format("Facing: %s (%s) (Yaw: %.1f / Pitch: %.1f)", direction, axis, lookingYaw, lookingPitch);
-            int worldLevelType = World.levelType;
+            int worldLevelTheme = World.levelTheme;
             // Predefined world themes
-            String[] worldTheme = new String[]{"Normal", "Hell", "Paradise", "Woods"};
+            String[] worldTheme = new String[]{"Normal", "Hell", "Paradise", "Woods", "Winter"};
 
-            // Drawing additional debug information
-            fontRend.drawStringWithShadow("OS: " + cachedOSInfo, 2, 52, 16777215);
-            fontRend.drawStringWithShadow("CPU: " + cachedCPUInfo, 2, 62, 16777215);
-            fontRend.drawStringWithShadow("GPU: " + gpu, 2, 72, 16777215);
-            fontRend.drawStringWithShadow("GPU Driver: " + gpuDriver, 2, 82, 16777215);  // Display GPU driver version
-            fontRend.drawStringWithShadow("Java Version: " + javaVersion, 2, 92, 16777215);  // Display Java version
-            fontRend.drawStringWithShadow("CPU Arch: " + cpuArch, 2, 112, 16777215);  // Display CPU architecture
-            fontRend.drawStringWithShadow("Resolution: " + resolution, 2, 122, 16777215);  // Display screen resolution
-            fontRend.drawStringWithShadow(coordinates, 2, 132, 16777215);
-            fontRend.drawStringWithShadow(lookingPosition, 2, 142, 16777215);
+            // Adjust the positions of the elements to fix the gap above the CPU architecture display
+            fontRend.drawStringWithShadow("OS: " + cachedOSInfo, 2, 52, 16777215); // OS information
+            fontRend.drawStringWithShadow("CPU: " + cachedCPUInfo, 2, 62, 16777215); // CPU information
+            fontRend.drawStringWithShadow("GPU: " + gpu, 2, 72, 16777215); // GPU information
+            fontRend.drawStringWithShadow("GPU Driver: " + gpuDriver, 2, 82, 16777215); // GPU Driver information
+            fontRend.drawStringWithShadow("Java Version: " + javaVersion, 2, 92, 16777215); // Java Version
 
-            // Ensure the levelType is within the range of the worldTheme array
-            if (worldLevelType >= 0 && worldLevelType < worldTheme.length) {
-                // Display the world type dynamically based on the levelType
-                String displayedTheme = "World Type: " + worldTheme[worldLevelType];
-                fontRend.drawStringWithShadow(displayedTheme, 2, 152, 16777215);
+            // Now display CPU architecture with correct spacing
+            fontRend.drawStringWithShadow("CPU Arch: " + cpuArch, 2, 102, 16777215);  // Corrected position for CPU architecture
+
+            // Adjust the position of the elements below CPU architecture (XYZ, Facing, etc.)
+            fontRend.drawStringWithShadow("Resolution: " + resolution, 2, 112, 16777215); // Screen resolution info
+            fontRend.drawStringWithShadow(coordinates, 2, 122, 16777215); // XYZ coordinates
+            fontRend.drawStringWithShadow(lookingPosition, 2, 132, 16777215); // Facing direction
+
+            // Ensure the LevelTheme is within the range of the worldTheme array
+            if (worldLevelTheme >= 0 && worldLevelTheme < worldTheme.length) {
+                // Display the world type dynamically based on the levelTheme
+                String displayedTheme = "World Theme: " + worldTheme[worldLevelTheme];
+                fontRend.drawStringWithShadow(displayedTheme, 2, 142, 16777215); // World type
             } else {
-                // Default in case the levelType is out of range
-                fontRend.drawStringWithShadow("World Type: Unknown", 2, 152, 16777215);
+                // Default in case the levelTheme is out of range
+                fontRend.drawStringWithShadow("World Theme: Unknown", 2, 142, 16777215);
             }
 
-            // Draw current date and time in "Month day, Year @ time" format
+            // Move the date and time display up as well
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM d, yyyy @ h:mm a");
             String dateTime = dateFormat.format(new Date());
-            drawString(fontRend, "Current time: " + dateTime, 2, 162, 16777215);
+            drawString(fontRend, "Current time: " + dateTime, 2, 152, 16777215); // Date and time
+
         }
         
         InventoryPlayer inventoryPlayer = this.mc.thePlayer.inventory;

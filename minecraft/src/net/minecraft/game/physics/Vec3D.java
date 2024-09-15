@@ -82,4 +82,8 @@ public final class Vec3D {
 	public final String toString() {
 		return "(" + this.xCoord + ", " + this.yCoord + ", " + this.zCoord + ")";
 	}
+
+	public final Vec3D multiply(float scalar) {
+	    return new Vec3D(this.xCoord * scalar, this.yCoord * scalar, this.zCoord * scalar);
+	}
 }

@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Random;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.effect.EntityBubbleFX;
+import net.minecraft.client.effect.EntityDiggingFX;
 import net.minecraft.client.effect.EntityExplodeFX;
+import net.minecraft.client.effect.EntityFallingLeafFX;
 import net.minecraft.client.effect.EntityFlameFX;
 import net.minecraft.client.effect.EntityLavaFX;
 import net.minecraft.client.effect.EntitySmokeFX;
@@ -727,31 +729,34 @@ public final class RenderGlobal implements IWorldAccess {
 	public final void playSound(String var1, float var2, float var3, float var4, float var5, float var6) {
 		this.mc.sndManager.playSound(var1, var2, var3, var4, var5, var6);
 	}
-
+	
 	public final void spawnParticle(String var1, float var2, float var3, float var4, float var5, float var6, float var7) {
-		float var8 = this.worldObj.playerEntity.posX - var2;
-		float var9 = this.worldObj.playerEntity.posY - var3;
-		float var10 = this.worldObj.playerEntity.posZ - var4;
-		if(var8 * var8 + var9 * var9 + var10 * var10 <= 256.0F) {
-			if(var1 == "bubble") {
-				this.mc.effectRenderer.addEffect(new EntityBubbleFX(this.worldObj, var2, var3, var4, var5, var6, var7));
-			} else if(var1 == "smoke") {
-				this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4));
-			} else if(var1 == "explode") {
-				this.mc.effectRenderer.addEffect(new EntityExplodeFX(this.worldObj, var2, var3, var4, var5, var6, var7));
-			} else if(var1 == "flame") {
-				this.mc.effectRenderer.addEffect(new EntityFlameFX(this.worldObj, var2, var3, var4));
-			} else if(var1 == "lava") {
-				this.mc.effectRenderer.addEffect(new EntityLavaFX(this.worldObj, var2, var3, var4));
-			} else if(var1 == "splash") {
-				this.mc.effectRenderer.addEffect(new EntitySplashFX(this.worldObj, var2, var3, var4));
-			} else {
-				if(var1 == "largesmoke") {
-					this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4, 2.5F));
-				}
+	    float var8 = this.worldObj.playerEntity.posX - var2;
+	    float var9 = this.worldObj.playerEntity.posY - var3;
+	    float var10 = this.worldObj.playerEntity.posZ - var4;
 
-			}
-		}
+	    // Check if the particle is within a certain range of the player (256 units)
+	    if (var8 * var8 + var9 * var9 + var10 * var10 <= 256.0F) {
+	        if (var1.equals("bubble")) {
+	            this.mc.effectRenderer.addEffect(new EntityBubbleFX(this.worldObj, var2, var3, var4, var5, var6, var7));
+	        } else if (var1.equals("smoke")) {
+	            this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("explode")) {
+	            this.mc.effectRenderer.addEffect(new EntityExplodeFX(this.worldObj, var2, var3, var4, var5, var6, var7));
+	        } else if (var1.equals("flame")) {
+	            this.mc.effectRenderer.addEffect(new EntityFlameFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("lava")) {
+	            this.mc.effectRenderer.addEffect(new EntityLavaFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("splash")) {
+	            this.mc.effectRenderer.addEffect(new EntitySplashFX(this.worldObj, var2, var3, var4));
+	        } else if (var1.equals("leaves")) {
+	            // Spawn leaves particle without passing motion parameters
+	            Block leavesBlock = Block.blocksList[20]; // Assuming block ID 20 is the leaves block
+	            this.mc.effectRenderer.addEffect(new EntityFallingLeafFX(this.worldObj, var2, var3, var4, 0.0F, leavesBlock));  // Set motionY to 0.0F, ignoring var5, var6, var7
+	        } else if (var1.equals("largesmoke")) {
+	            this.mc.effectRenderer.addEffect(new EntitySmokeFX(this.worldObj, var2, var3, var4, 2.5F));
+	        }
+	    }
 	}
 
 	public final void playMusic(String var1, float var2, float var3, float var4, float var5) {
@@ -762,12 +767,18 @@ public final class RenderGlobal implements IWorldAccess {
 		if(var1.skinUrl != null) {
 			this.renderEngine.obtainImageData(var1.skinUrl, new ImageBufferDownload());
 		}
+		if(var1.capeUrl != null) {
+			this.renderEngine.obtainImageData(var1.capeUrl, new ImageBufferDownload());
+		}
 
 	}
 
 	public final void releaseEntitySkin(Entity var1) {
 		if(var1.skinUrl != null) {
 			this.renderEngine.releaseImageData(var1.skinUrl);
+		}
+		if(var1.capeUrl != null) {
+			this.renderEngine.releaseImageData(var1.capeUrl);
 		}
 
 	}

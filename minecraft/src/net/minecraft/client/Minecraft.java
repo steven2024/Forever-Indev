@@ -729,9 +729,28 @@ public final class Minecraft implements Runnable {
 	    
 	    updateMusicState();
 		
-		if(!this.isGamePaused && this.theWorld != null) {
-			this.playerController.onUpdate();
-		}
+	 // Assume these are global or contextually available variables
+	    boolean wasPaused = true; // Initialize to true if starting in a paused state
+
+	    // Check if the game has just been unpaused (transition from paused to unpaused)
+	    if (wasPaused && !this.isGamePaused && this.theWorld != null) {
+	        this.thePlayer.movementInput.resetKeyState();
+	        
+	        // Mark that the reset has been done, so it doesn't repeat until the next pause/unpause
+	        wasPaused = false;
+	    }
+
+	    // Always run the update logic if the world exists and the game is not paused
+	    if (!this.isGamePaused && this.theWorld != null) {
+	        this.playerController.onUpdate();
+	    }
+
+	    // When the game is paused, set wasPaused to true so input states are reset after unpausing
+	    if (this.isGamePaused && !wasPaused) {
+	        // This will only trigger the first time the game is paused after being unpaused
+	        wasPaused = true;
+	    }
+
 
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.renderEngine.getTexture("/terrain.png"));
 		if(!this.isGamePaused) {
@@ -1030,7 +1049,7 @@ public final class Minecraft implements Runnable {
 		}
 
 	}
-	
+
 	public void updateMusicState() {
 	    if (this.options.music) {
 	        this.sndManager.playRandomMusicIfReady(); // Start music if the option is enabled
@@ -1077,7 +1096,7 @@ public final class Minecraft implements Runnable {
 	    var7.islandGen = var3 == 1;
 	    var7.floatingGen = var3 == 2;
 	    var7.flatGen = var3 == 3;
-	    var7.levelType = var4;
+	    var7.levelTheme = var4;
 	    var1 = 128 << var1;
 	    var3 = var1;
 	    int height = var7.getHeightFromDepth(var5);

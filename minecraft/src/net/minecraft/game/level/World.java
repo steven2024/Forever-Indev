@@ -66,7 +66,7 @@ public final class World {
 	private int[] coords = new int[1048576];
 	private int[] floodedBlocks = new int[1048576];
 	public int difficultySetting = 2;
-	public static int levelType;
+	public static int levelTheme;
 
 	public final void load() {
 		if(this.blocks == null) {

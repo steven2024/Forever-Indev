@@ -5,10 +5,10 @@ import net.minecraft.game.physics.Vec3D;
 import org.lwjgl.opengl.GL11;
 
 public final class ModelRenderer {
-	private PositionTextureVertex[] corners;
+	PositionTextureVertex[] corners;
 	TexturedQuad[] faces;
-	private int textureOffsetX;
-	private int textureOffsetY;
+	int textureOffsetX;
+	int textureOffsetY;
 	private float rotationPointX;
 	float rotationPointY;
 	private float rotationPointZ;

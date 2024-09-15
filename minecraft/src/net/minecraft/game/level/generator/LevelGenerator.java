@@ -35,7 +35,7 @@ public final class LevelGenerator {
 	public boolean islandGen = false;
 	public boolean floatingGen = false;
 	public boolean flatGen = false;
-	public int levelType;
+	public int levelTheme;
 	private int phaseBar;
 	private int phases;
 	private float phaseBareLength = 0.0F;
@@ -56,7 +56,7 @@ public final class LevelGenerator {
 		this.phases = 13 + var5 * 4;
 		this.guiLoading.displayProgressMessage("Generating level");
 		World var6 = new World();
-		var6.levelType = this.levelType;
+		var6.levelTheme = this.levelTheme;
 		var6.waterLevel = this.waterLevel;
 		var6.groundLevel = this.groundLevel;
 		this.width = var2;
@@ -245,7 +245,7 @@ public final class LevelGenerator {
 			var13 = new NoiseGeneratorOctaves(this.rand, 8);
 			var54 = new NoiseGeneratorOctaves(this.rand, 8);
 			var56 = this.waterLevel - 1;
-			if(this.levelType == 2) {
+			if(this.levelTheme == 2) {
 				var56 += 2;
 			}
 
@@ -258,12 +258,12 @@ public final class LevelGenerator {
 						var60 = var13.generateNoise((double)var21, (double)var22) > -8.0D;
 					}
 
-					if(var9.levelType == 2) {
+					if(var9.levelTheme == 2) {
 						var60 = var13.generateNoise((double)var21, (double)var22) > -32.0D;
 					}
 
 					boolean var61 = var54.generateNoise((double)var21, (double)var22) > 12.0D;
-					if(var9.levelType == 1 || var9.levelType == 3) {
+					if(var9.levelTheme == 1 || var9.levelTheme == 3) {
 						var60 = var13.generateNoise((double)var21, (double)var22) > -8.0D;
 					}
 
@@ -278,7 +278,7 @@ public final class LevelGenerator {
 						int var69 = -1;
 						if(var25 <= var56 && var60) {
 							var69 = Block.sand.blockID;
-							if(var9.levelType == 1) {
+							if(var9.levelTheme == 1) {
 								var69 = Block.grass.blockID;
 							}
 						}
@@ -375,7 +375,7 @@ public final class LevelGenerator {
 		this.liquidThemeSpawner();
 		if(!this.floatingGen) {
 			var5 = Block.waterStill.blockID;
-			if(this.levelType == 1) {
+			if(this.levelTheme == 1) {
 				var5 = Block.lavaStill.blockID;
 			}
 
@@ -390,13 +390,13 @@ public final class LevelGenerator {
 			}
 		}
 
-		if(this.levelType == 0) {
+		if(this.levelTheme == 0) {
 			var6.skyColor = 10079487;
 			var6.fogColor = 16777215;
 			var6.cloudColor = 16777215;
 		}
 
-		if(this.levelType == 1) {
+		if(this.levelTheme == 1) {
 			var6.cloudColor = 2164736;
 			var6.fogColor = 1049600;
 			var6.skyColor = 1049600;
@@ -408,7 +408,7 @@ public final class LevelGenerator {
 			}
 		}
 
-		if(this.levelType == 2) {
+		if(this.levelTheme == 2) {
 			var6.skyColor = 13033215;
 			var6.fogColor = 13033215;
 			var6.cloudColor = 15658751;
@@ -417,14 +417,14 @@ public final class LevelGenerator {
 			var6.cloudHeight = var4 + 64;
 		}
 
-		if(this.levelType == 3) {
+		if(this.levelTheme == 3) {
 			var6.skyColor = 7699847;
 			var6.fogColor = 5069403;
 			var6.cloudColor = 5069403;
 			var6.skylightSubtracted = var6.skyBrightness = 12;
 		}
 		
-		if(this.levelType == 4) {
+		if(this.levelTheme == 4) {
 		    var6.skyColor = 0xD3D3D3;  // Light Gray for a cold, overcast sky
 		    var6.fogColor = 0xE0E0E0;   // Very Light Gray for foggy, frosty conditions
 		    var6.cloudColor = 0xC0C0C0; // Silver Gray for winter clouds
@@ -444,20 +444,20 @@ public final class LevelGenerator {
 		generateHouse(var6, mc);
 		this.guiLoading.displayLoadingString("Planting..");
 		this.loadingBar();
-		if(this.levelType != 1) {
+		if(this.levelTheme != 1) {
 			this.growGrassOnDirt(var6);
 		}
 
 		this.loadingBar();
 		this.growTrees(var6);
-		if(this.levelType == 3) {
+		if(this.levelTheme == 3) {
 			for(var5 = 0; var5 < 50; ++var5) {
 				this.growTrees(var6);
 			}
 		}
 
 		short var43 = 100;
-		if(this.levelType == 2) {
+		if(this.levelTheme == 2) {
 			var43 = 1000;
 		}
 
@@ -813,8 +813,7 @@ public final class LevelGenerator {
 
         // Windows: Glass with a chance to be replaced by tinted glass or the chosen wall block
         blockMapping.put("minecraft:glass", selectBlockWithChance(
-            Block.glass, 
-            new Block[]{Block.tintedGlass, chosenWallBlock}, 
+            chosenWallBlock, new Block[]{Block.glass, chosenWallBlock}, 
             rand
         ));
 
@@ -1042,7 +1041,7 @@ public final class LevelGenerator {
 
 	private void liquidThemeSpawner() {
 		int var1 = Block.waterStill.blockID;
-		if(this.levelType == 1) {
+		if(this.levelTheme == 1) {
 			var1 = Block.lavaStill.blockID;
 		}
 

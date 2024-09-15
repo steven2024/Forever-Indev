@@ -1,5 +1,14 @@
 package net.minecraft.game.entity.player;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Base64;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.mojang.nbt.NBTTagCompound;
 import com.mojang.nbt.NBTTagList;
 import net.minecraft.client.Minecraft;
@@ -29,10 +38,127 @@ public class EntityPlayerSP extends EntityPlayer {
         
         this.mc = mc;
         
-        if (session != null)
-            this.skinUrl = "http://www.minecraft.net/skin/" + session.username + ".png";
+        
+        if (session != null) {
+            try {
+                String username = session.username;
+
+                // Convert username to UUID using Mojang's API
+                String uuid = getUUIDFromUsername(username);
+                
+                if (uuid != null) {
+                    // Fetch the skin URL using the UUID
+                    this.skinUrl = getSkinUrlFromUUID(uuid);
+                    
+                    // Fetch the cape URL (using a third-party service or Mojang's API)
+                    this.capeUrl = getCapeUrlFromUUID(uuid);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
-    
+
+    // Helper method to convert username to UUID
+    private String getUUIDFromUsername(String username) {
+        try {
+            URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + username);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine;
+            StringBuilder content = new StringBuilder();
+
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+
+            in.close();
+            connection.disconnect();
+
+            // Parse the JSON response to extract the UUID
+            JSONObject jsonResponse = new JSONObject(content.toString());
+            return jsonResponse.getString("id");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Helper method to get the skin URL from UUID
+    private String getSkinUrlFromUUID(String uuid) {
+        try {
+            URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine;
+            StringBuilder content = new StringBuilder();
+
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+
+            in.close();
+            connection.disconnect();
+
+            // Extract the skin URL from the profile JSON
+            JSONObject jsonResponse = new JSONObject(content.toString());
+            JSONArray properties = jsonResponse.getJSONArray("properties");
+            for (int i = 0; i < properties.length(); i++) {
+                JSONObject property = properties.getJSONObject(i);
+                if (property.getString("name").equals("textures")) {
+                    String value = property.getString("value");
+                    String decodedValue = new String(Base64.getDecoder().decode(value));
+                    JSONObject texturesJson = new JSONObject(decodedValue);
+                    return texturesJson.getJSONObject("textures").getJSONObject("SKIN").getString("url");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+ // Helper method to get the cape URL from UUID
+    private String getCapeUrlFromUUID(String uuid) {
+        try {
+            // Using a third-party service such as Ashcon API to get the cape URL
+            URL url = new URL("https://api.ashcon.app/mojang/v2/user/" + uuid);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine;
+            StringBuilder content = new StringBuilder();
+
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+
+            in.close();
+            connection.disconnect();
+
+            // Extract the cape URL from the response
+            JSONObject jsonResponse = new JSONObject(content.toString());
+            if (jsonResponse.has("textures")) {
+                JSONObject textures = jsonResponse.getJSONObject("textures");
+                if (textures.has("cape")) {
+                    // Assuming cape is a JSONObject containing a URL field
+                    JSONObject cape = textures.getJSONObject("cape");
+                    if (cape.has("url")) {
+                        return cape.getString("url");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+        
     public boolean attackThisEntity(Entity attacker, int damage) {
         if (!isCreativeMode)
             return super.attackThisEntity(attacker, damage);
