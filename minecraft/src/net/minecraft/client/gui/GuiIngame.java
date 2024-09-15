@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 
 import net.minecraft.client.ChatLine;
@@ -562,6 +563,8 @@ public final class GuiIngame extends Gui {
         // Draw the score number in yellow
         fontRend.drawStringWithShadow(scoreNumberStr, width - scoreNumberWidth - 2, 2, 0xFFFF00);
 
+        // draw HUD
+        if (this.mc.playerController.shouldDrawHUD()) {
 
         ItemStack currItem = this.mc.thePlayer.inventory.getCurrentItem();
         if (currItem != null) {

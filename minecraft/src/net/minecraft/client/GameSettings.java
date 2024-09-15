@@ -234,4 +234,4 @@ public final class GameSettings {
             e.printStackTrace();
         }
     }
-}
+}	
