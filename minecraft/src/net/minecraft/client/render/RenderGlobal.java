@@ -36,8 +36,6 @@ import org.lwjgl.opengl.GLContext;
 import util.MathHelper;
 
 public final class RenderGlobal implements IWorldAccess {
-	// Declare CloudRenderer
-	private CloudRenderer cloudRenderer;
 	private World worldObj;
 	private RenderEngine renderEngine;
 	private int glGenList;
@@ -465,6 +463,26 @@ public final class RenderGlobal implements IWorldAccess {
 			var6 = var7;
 			var3 = var3;
 		}
+
+		var9 = (float)this.worldObj.cloudHeight;
+		var7 = ((float)this.cloudOffsetX + var1) * (0.5F / 1024.0F) * 0.03F;
+		var12.startDrawingQuads();
+		var12.setColorOpaque_F(var4, var6, var3);
+
+		for(int var8 = -2048; var8 < this.worldObj.width + 2048; var8 += 512) {
+			for(var10 = -2048; var10 < this.worldObj.length + 2048; var10 += 512) {
+				var12.addVertexWithUV((float)var8, var9, (float)(var10 + 512), (float)var8 * (0.5F / 1024.0F) + var7, (float)(var10 + 512) * (0.5F / 1024.0F));
+				var12.addVertexWithUV((float)(var8 + 512), var9, (float)(var10 + 512), (float)(var8 + 512) * (0.5F / 1024.0F) + var7, (float)(var10 + 512) * (0.5F / 1024.0F));
+				var12.addVertexWithUV((float)(var8 + 512), var9, (float)var10, (float)(var8 + 512) * (0.5F / 1024.0F) + var7, (float)var10 * (0.5F / 1024.0F));
+				var12.addVertexWithUV((float)var8, var9, (float)var10, (float)var8 * (0.5F / 1024.0F) + var7, (float)var10 * (0.5F / 1024.0F));
+				var12.addVertexWithUV((float)var8, var9, (float)var10, (float)var8 * (0.5F / 1024.0F) + var7, (float)var10 * (0.5F / 1024.0F));
+				var12.addVertexWithUV((float)(var8 + 512), var9, (float)var10, (float)(var8 + 512) * (0.5F / 1024.0F) + var7, (float)var10 * (0.5F / 1024.0F));
+				var12.addVertexWithUV((float)(var8 + 512), var9, (float)(var10 + 512), (float)(var8 + 512) * (0.5F / 1024.0F) + var7, (float)(var10 + 512) * (0.5F / 1024.0F));
+				var12.addVertexWithUV((float)var8, var9, (float)(var10 + 512), (float)var8 * (0.5F / 1024.0F) + var7, (float)(var10 + 512) * (0.5F / 1024.0F));
+			}
+		}
+
+		var12.draw();
 	}
 	public final void oobGroundRenderer() {
 		float var1 = this.worldObj.getLightBrightness(0, this.worldObj.getGroundLevel(), 0);

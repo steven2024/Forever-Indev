@@ -935,11 +935,6 @@ public final class Minecraft implements Runnable {
 									else if (Keyboard.getEventKey() == Keyboard.KEY_F2) {
 									    entityRenderer.takeScreenshot(new File(this.mcDataDir, "screenshots").getAbsolutePath());
 									}
-									
-									else if (Keyboard.getEventKey() == Keyboard.KEY_F3) {
-										this.options.showFPS = !this.options.showFPS;
-									}
-
 
 									else if (Keyboard.getEventKey() == Keyboard.KEY_F5 && Keyboard.getEventKeyState()) {
 									    // Cycle through the camera modes
